@@ -1,16 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import { login as loginUser } from '../services/authService';
 
 const LoginPage = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
+  const navigate = useNavigate();
 
+  const [apiError, setApiError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const onSubmit = (data) => {
-    console.log("Login Data:", data);
+  // Yeh hai asli, powerful onSubmit function
+  const onSubmit = async (data) => {
+    try {
+      setIsLoading(true);
+      setApiError(null);
 
+      const response = await loginUser(data);
+      console.log("Login successful, token received:", response.token);
+
+      // TOKEN KO JEB MEIN RAKHO (Local Storage)
+      localStorage.setItem('token', response.token);
+
+      // User ko Dashboard pe bhej do
+      navigate('/dashboard');
+
+    } catch (error) {
+      console.error("Login failed:", error);
+      setApiError(error.response?.data?.message || "An unknown error occurred.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -34,8 +56,10 @@ const LoginPage = () => {
           />
           {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
 
-          <Button type="submit">
-            Login
+          {apiError && <p className="text-red-500 text-center text-sm">{apiError}</p>}
+
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? 'Logging in...' : 'Login'}
           </Button>
         </form>
         <p className="text-sm text-center text-gray-400">
