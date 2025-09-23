@@ -18,12 +18,10 @@ export const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
     const newUser = new User({ username, email, password: hashedPassword });
     const savedUser = await newUser.save();
-    res
-      .status(201)
-      .json({
-        message: "User registered successfully!",
-        userId: savedUser._id,
-      });
+    res.status(201).json({
+      message: "User registered successfully!",
+      userId: savedUser._id,
+    });
   } catch (error) {
     console.error("Error during registration:", error);
     res.status(500).json({ message: "Server error during registration." });
@@ -56,7 +54,7 @@ export const login = async (req, res) => {
         id: user.id, // User ki unique ID ko pass mein daal rahe hain
       },
     };
-
+    console.log("SIGNING TOKEN WITH SECRET:", process.env.JWT_SECRET); // <-- CCTV #1
     jwt.sign(
       payload,
       process.env.JWT_SECRET, // Hamara secret code
