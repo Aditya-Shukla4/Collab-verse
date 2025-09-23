@@ -1,16 +1,40 @@
-import React from 'react';
+// client/src/pages/RegisterPage.jsx
+
+import React, { useState } from 'react'; // <-- useState ko import kiya
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // <-- useNavigate ko import kiya
 import Input from '../components/Input';
 import Button from '../components/Button';
+import { register as registerUser } from '../services/authService'; // <-- Apne service function ko import kiya
 
 const RegisterPage = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
+  const navigate = useNavigate(); // <-- useNavigate ko initialize kiya
 
+  // Error aur loading ke liye state banayi
+  const [apiError, setApiError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const onSubmit = (data) => {
-    console.log("Registration Data:", data);
+  // Yeh hai hamara naya, powerful onSubmit function
+  const onSubmit = async (data) => {
+    try {
+      setIsLoading(true); // 1. Loading shuru
+      setApiError(null); // Purana error saaf karo
 
+      // 2. API call karo aur backend se response ka wait karo
+      const response = await registerUser(data);
+      console.log("Registration successful:", response);
+
+      // 3. Agar sab sahi raha, toh user ko login page pe bhej do
+      navigate('/login');
+
+    } catch (error) {
+      // 4. Agar backend se error aaya, toh use screen pe dikhao
+      console.error("Registration failed:", error);
+      setApiError(error.response?.data?.message || "An unknown error occurred.");
+    } finally {
+      setIsLoading(false); // 5. Loading khatam (chahe success ho ya fail)
+    }
   };
 
   return (
@@ -18,6 +42,7 @@ const RegisterPage = () => {
       <div className="w-full max-w-md p-8 space-y-6 bg-gray-800 rounded-lg shadow-lg">
         <h2 className="text-2xl font-bold text-center">Create a New Account</h2>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* ... Baaki ka form bilkul same hai ... */}
           <Input
             label="Username"
             type="text"
@@ -41,9 +66,12 @@ const RegisterPage = () => {
             {...register("password", { required: "Password is required", minLength: { value: 6, message: "Password must be at least 6 characters" } })}
           />
           {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
+          
+          {/* API se aaya hua error yahan dikhega */}
+          {apiError && <p className="text-red-500 text-center text-sm">{apiError}</p>}
 
-          <Button type="submit">
-            Register
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? 'Registering...' : 'Register'}
           </Button>
         </form>
         <p className="text-sm text-center text-gray-400">
