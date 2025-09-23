@@ -54,7 +54,7 @@ export const login = async (req, res) => {
         id: user.id, // User ki unique ID ko pass mein daal rahe hain
       },
     };
-    console.log("SIGNING TOKEN WITH SECRET:", process.env.JWT_SECRET); // <-- CCTV #1
+
     jwt.sign(
       payload,
       process.env.JWT_SECRET, // Hamara secret code

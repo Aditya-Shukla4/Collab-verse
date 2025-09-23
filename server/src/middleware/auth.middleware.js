@@ -14,7 +14,6 @@ const authMiddleware = (req, res, next) => {
   try {
     // jwt.verify() token ko hamare JWT_SECRET se decode karne ki koshish karta hai.
     // Agar token nakli hai ya badal diya gaya hai, toh yeh error de dega.
-    console.log("VERIFYING TOKEN WITH SECRET:", process.env.JWT_SECRET); // <-- CCTV #2
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // 4. SABSE ZAROORI KAAM:
