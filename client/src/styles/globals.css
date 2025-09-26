@@ -1,0 +1,53 @@
+/* Yeh hai Tailwind v4 ka naya, asli tareeka. Sirf ek line. */
+@import "tailwindcss";
+
+/* Iske baad, hum apni theme define karenge */
+@layer base {
+  :root {
+    --background: #000000;
+    --foreground: #f5f3ff;
+    --card: #200d42;
+    --card-foreground: #f5f3ff;
+    --primary: #a46edb;
+    --primary-foreground: #000000;
+    --secondary: #4f21a1;
+    --secondary-foreground: #f5f3ff;
+    --muted: #200d42;
+    --muted-foreground: #f5f3ff;
+    --accent: #4f21a1;
+    --accent-foreground: #f5f3ff;
+    --border: #4f21a1;
+    --input: #4f21a1;
+    --ring: #a46edb;
+    /* --radius: 0.5rem; */
+
+    /* YEH HAI ASLI JAADU! TERE DIYE HUE GRADIENT VARIABLES! */
+    --gradient-hero-stop-0: #000000;
+    --gradient-hero-stop-34: #200d42;
+    --gradient-hero-stop-65: #4f21a1;
+    --gradient-hero-stop-82: #a46edb;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  * {
+    border-color: var(--border);
+  }
+}
+
+/* Aur humne gradient ko uski apni class me yahan daal diya hai! */
+@layer utilities {
+  .hero-gradient {
+    /* Hum yahan tere diye hue linear-gradient ko use kar rahe hain! */
+    background: linear-gradient(
+      180deg,
+      var(--gradient-hero-stop-0) 0%,
+      var(--gradient-hero-stop-34) 34%,
+      var(--gradient-hero-stop-65) 65%,
+      var(--gradient-hero-stop-82) 82%
+    );
+  }
+}

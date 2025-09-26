@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-export default function LoginPage() {
+export default function SignupPage() {
   return (
-    // Yahan humne 'hero-gradient' class laga di hai, jo ab globals.css se aa rahi hai!
+    // Same to same gradient, same to same structure!
     <div className="hero-gradient flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Header with Logo */}
@@ -15,15 +15,16 @@ export default function LoginPage() {
               Collab Verse
             </span>
           </Link>
+          {/* Humne bas yahan text badla hai */}
           <h1 className="text-3xl font-bold text-[var(--foreground)]">
-            Welcome back
+            Create an account
           </h1>
           <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-            Sign in to your account to continue
+            Enter your details below to get started
           </p>
         </div>
 
-        {/* The Glass Card - Yahan hai asli jaadu! */}
+        {/* The Glass Card - Aekdum waisa hi! */}
         <div className="space-y-6 rounded-lg border border-[var(--border)] bg-[var(--card)]/50 p-8 backdrop-blur-sm">
           <form className="space-y-4">
             {/* Email Input */}
@@ -54,37 +55,35 @@ export default function LoginPage() {
               <input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="Create a password"
                 className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)]"
                 required
               />
             </div>
 
-            {/* Remember me & Forgot Password */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  className="rounded border-[var(--border)] bg-transparent text-[var(--primary)] focus:ring-[var(--primary)]"
-                />
-                <span className="text-sm text-[var(--muted-foreground)]">
-                  Remember me
-                </span>
-              </label>
-              <Link
-                href="#"
-                className="text-sm text-[var(--primary)] hover:text-[var(--primary)]/80"
+            {/* Confirm Password Input - Yeh naya add kiya hai */}
+            <div className="space-y-2">
+              <label
+                htmlFor="confirm-password"
+                className="text-sm font-medium text-[var(--foreground)]"
               >
-                Forgot password?
-              </Link>
+                Confirm Password
+              </label>
+              <input
+                id="confirm-password"
+                type="password"
+                placeholder="Confirm your password"
+                className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)]"
+                required
+              />
             </div>
 
-            {/* Sign In Button */}
+            {/* Sign Up Button - Yahan bhi text badla hai */}
             <button
               type="submit"
               className="h-11 w-full rounded-md bg-[var(--primary)] text-base font-bold text-[var(--primary-foreground)] transition-transform hover:-translate-y-0.5 hover:bg-[var(--primary)]/90"
             >
-              Sign In
+              Sign Up
             </button>
           </form>
 
@@ -100,7 +99,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Social Login Buttons */}
+          {/* Social Login Buttons - Same to same */}
           <div className="space-y-3">
             <button className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[#27292a56] text-white transition-transform hover:-translate-y-0.5 hover:bg-[#323941]">
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -132,14 +131,14 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Sign Up Link */}
+        {/* Sign In Link - Yahan bhi text badla hai */}
         <p className="text-center text-sm text-[var(--muted-foreground)]">
-          Don't have an account?{" "}
+          Already have an account?{" "}
           <Link
-            href="/SignupPage"
+            href="/LoginPage"
             className="font-semibold text-primary hover:text-primary/80"
           >
-            Sign up
+            Sign in
           </Link>
         </p>
       </div>
