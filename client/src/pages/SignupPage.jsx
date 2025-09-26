@@ -1,32 +1,69 @@
+import { useState } from "react";
 import Link from "next/link";
+import axios from "axios";
+import { useRouter } from "next/router";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function SignupPage() {
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      alert("Passwords do not match!");
+      return;
+    }
+    try {
+      const newUser = { username, email, password };
+      await axios.post("http://localhost:5000/api/auth/register", newUser);
+      alert("Registration Successful! Please log in.");
+      router.push("/LoginPage");
+    } catch (error) {
+      alert(`Error: ${error.response.data.message}`);
+    }
+  };
+
   return (
-    // Same to same gradient, same to same structure!
     <div className="hero-gradient flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
-        {/* Header with Logo */}
-        <div className="text-center">
-          <Link href="/" className="mb-8 inline-flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--primary)] text-sm font-bold uppercase text-[var(--primary-foreground)]">
-              CV
-            </span>
-            <span className="text-xl font-semibold text-[var(--foreground)]">
-              Collab Verse
-            </span>
-          </Link>
-          {/* Humne bas yahan text badla hai */}
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">
-            Create an account
-          </h1>
-          <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-            Enter your details below to get started
-          </p>
-        </div>
-
-        {/* The Glass Card - Aekdum waisa hi! */}
+        {/* The Glass Card */}
         <div className="space-y-6 rounded-lg border border-[var(--border)] bg-[var(--card)]/50 p-8 backdrop-blur-sm">
-          <form className="space-y-4">
+          {/* Form Header (Center Logo Removed) */}
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+              Create an account
+            </h1>
+            <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+              Enter your details below to get started
+            </p>
+          </div>
+
+          <form onSubmit={handleRegister} className="space-y-4">
+            {/* Username Input */}
+            <div className="space-y-2">
+              <label
+                htmlFor="username"
+                className="text-sm font-medium text-[var(--foreground)]"
+              >
+                Username
+              </label>
+              <input
+                id="username"
+                type="text"
+                placeholder="Choose a username"
+                className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)] transition-colors"
+                required
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+
             {/* Email Input */}
             <div className="space-y-2">
               <label
@@ -39,8 +76,10 @@ export default function SignupPage() {
                 id="email"
                 type="email"
                 placeholder="Enter your email"
-                className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)]"
+                className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)] transition-colors"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
@@ -52,16 +91,31 @@ export default function SignupPage() {
               >
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                placeholder="Create a password"
-                className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)]"
-                required
-              />
+              <div className="relative flex items-center">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Create a password"
+                  className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)] transition-colors"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-0 mr-3 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? (
+                    <FaEyeSlash size={20} />
+                  ) : (
+                    <FaEye size={20} />
+                  )}
+                </button>
+              </div>
             </div>
 
-            {/* Confirm Password Input - Yeh naya add kiya hai */}
+            {/* Confirm Password Input */}
             <div className="space-y-2">
               <label
                 htmlFor="confirm-password"
@@ -69,19 +123,34 @@ export default function SignupPage() {
               >
                 Confirm Password
               </label>
-              <input
-                id="confirm-password"
-                type="password"
-                placeholder="Confirm your password"
-                className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)]"
-                required
-              />
+              <div className="relative flex items-center">
+                <input
+                  id="confirm-password"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Confirm your password"
+                  className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)] transition-colors"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-0 mr-3 text-gray-400 hover:text-white"
+                >
+                  {showConfirmPassword ? (
+                    <FaEyeSlash size={20} />
+                  ) : (
+                    <FaEye size={20} />
+                  )}
+                </button>
+              </div>
             </div>
 
-            {/* Sign Up Button - Yahan bhi text badla hai */}
+            {/* Sign Up Button */}
             <button
               type="submit"
-              className="h-11 w-full rounded-md bg-[var(--primary)] text-base font-bold text-[var(--primary-foreground)] transition-transform hover:-translate-y-0.5 hover:bg-[var(--primary)]/90"
+              className="h-11 w-full rounded-md bg-[var(--primary)] text-base font-bold text-[var(--primary-foreground)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--primary)]/90 hover:shadow-lg hover:shadow-[var(--primary)]/30"
             >
               Sign Up
             </button>
@@ -99,7 +168,7 @@ export default function SignupPage() {
             </div>
           </div>
 
-          {/* Social Login Buttons - Same to same */}
+          {/* Social Login Buttons */}
           <div className="space-y-3">
             <button className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[#27292a56] text-white transition-transform hover:-translate-y-0.5 hover:bg-[#323941]">
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -131,7 +200,6 @@ export default function SignupPage() {
           </div>
         </div>
 
-        {/* Sign In Link - Yahan bhi text badla hai */}
         <p className="text-center text-sm text-[var(--muted-foreground)]">
           Already have an account?{" "}
           <Link

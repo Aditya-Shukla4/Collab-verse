@@ -1,31 +1,55 @@
+// client/src/pages/LoginPage.jsx
+
+import { useState } from "react";
 import Link from "next/link";
+import axios from "axios";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const credentials = { email, password };
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        credentials
+      );
+      const { token } = response.data;
+      localStorage.setItem("token", token);
+      alert("Login successful! Welcome back!");
+      // After login is successful, you can redirect the user
+      // For example: window.location.href = "/dashboard";
+    } catch (error) {
+      alert(
+        `Login failed: ${
+          error.response
+            ? error.response.data.message
+            : "Cannot connect to server"
+        }`
+      );
+    }
+  };
+
   return (
-    // Yahan humne 'hero-gradient' class laga di hai, jo ab globals.css se aa rahi hai!
     <div className="hero-gradient flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
-        {/* Header with Logo */}
-        <div className="text-center">
-          <Link href="/" className="mb-8 inline-flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--primary)] text-sm font-bold uppercase text-[var(--primary-foreground)]">
-              CV
-            </span>
-            <span className="text-xl font-semibold text-[var(--foreground)]">
-              Collab Verse
-            </span>
-          </Link>
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">
-            Welcome back
-          </h1>
-          <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-            Sign in to your account to continue
-          </p>
-        </div>
-
-        {/* The Glass Card - Yahan hai asli jaadu! */}
+        {/* The Glass Card containing the form */}
         <div className="space-y-6 rounded-lg border border-[var(--border)] bg-[var(--card)]/50 p-8 backdrop-blur-sm">
-          <form className="space-y-4">
+          {/* Form Header */}
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-[var(--foreground)]">
+              Welcome back
+            </h1>
+            <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+              Sign in to your account to continue
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
             {/* Email Input */}
             <div className="space-y-2">
               <label
@@ -38,12 +62,14 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 placeholder="Enter your email"
-                className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)]"
+                className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)] transition-colors"
                 required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
-            {/* Password Input */}
+            {/* Password Input with Eye Icon */}
             <div className="space-y-2">
               <label
                 htmlFor="password"
@@ -51,13 +77,28 @@ export default function LoginPage() {
               >
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)]"
-                required
-              />
+              <div className="relative flex items-center">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)] transition-colors"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-0 mr-3 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? (
+                    <FaEyeSlash size={20} />
+                  ) : (
+                    <FaEye size={20} />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Remember me & Forgot Password */}
@@ -82,7 +123,7 @@ export default function LoginPage() {
             {/* Sign In Button */}
             <button
               type="submit"
-              className="h-11 w-full rounded-md bg-[var(--primary)] text-base font-bold text-[var(--primary-foreground)] transition-transform hover:-translate-y-0.5 hover:bg-[var(--primary)]/90"
+              className="h-11 w-full rounded-md bg-[var(--primary)] text-base font-bold text-[var(--primary-foreground)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--primary)]/90 hover:shadow-lg hover:shadow-[var(--primary)]/30"
             >
               Sign In
             </button>
