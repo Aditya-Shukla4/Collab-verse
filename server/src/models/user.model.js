@@ -13,7 +13,14 @@ const userSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
-    password: { type: String, required: true },
+    password: { type: String, required: false },
+
+    //GIt hub login
+    githubId: {
+      type: String,
+      unique: true,
+      sparse: true, // Yeh allow karta hai ki multiple users ki yeh field khali ho, par agar bhari ho toh unique ho
+    },
 
     // ===== YAHAN SE NAYE FIELDS ADD KIYE HAIN =====
 
