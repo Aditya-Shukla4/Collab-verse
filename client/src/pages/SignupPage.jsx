@@ -22,7 +22,6 @@ export default function SignupPage() {
     try {
       const newUser = { username, email, password };
       await axios.post("http://localhost:5000/api/auth/register", newUser);
-      alert("Registration Successful! Please log in.");
       router.push("/LoginPage");
     } catch (error) {
       alert(`Error: ${error.response.data.message}`);

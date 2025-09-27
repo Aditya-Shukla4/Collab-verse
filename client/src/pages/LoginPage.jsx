@@ -4,8 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import axios from "axios";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useRouter } from "next/router";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -20,9 +22,8 @@ export default function LoginPage() {
       );
       const { token } = response.data;
       localStorage.setItem("token", token);
-      alert("Login successful! Welcome back!");
-      // After login is successful, you can redirect the user
-      // For example: window.location.href = "/dashboard";
+
+      router.push("/create-profile");
     } catch (error) {
       alert(
         `Login failed: ${

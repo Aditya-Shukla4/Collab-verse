@@ -1,13 +1,11 @@
+// server/src/models/user.model.js
+
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
-    username: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
+    // Yeh fields pehle se the
+    username: { type: String, required: true, unique: true, trim: true },
     email: {
       type: String,
       required: true,
@@ -15,29 +13,34 @@ const userSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
     },
-    password: {
-      type: String,
-      required: true,
-    },
-    // ===== NAYE FIELDS YAHAN SE SHURU HOTE HAIN =====
-    bio: {
-      type: String,
-      default: "A passionate developer ready to collaborate!", // Default bio
-      trim: true,
-      maxlength: 250,
-    },
-    techStack: {
-      type: [String], // Yeh ek array hoga, jismein strings honge. Jaise: ['React', 'Node.js']
-      default: [],
-    },
-    githubUrl: {
-      type: String,
-      trim: true,
-    },
-    linkedInUrl: {
-      type: String,
-      trim: true,
-    },
+    password: { type: String, required: true },
+
+    // ===== YAHAN SE NAYE FIELDS ADD KIYE HAIN =====
+
+    // User ka asli naam (UI se "User Name")
+    name: { type: String, trim: true, default: "" },
+
+    // Basic Info
+    occupation: { type: String, trim: true, default: "" },
+    location: { type: String, trim: true, default: "" },
+
+    // Interests
+    domainOfInterests: { type: [String], default: [] }, // Array of strings
+
+    // Pehle se tha, bas confirm kar rahe hain
+    techStack: { type: [String], default: [] }, // Array of strings
+
+    // Social & Professional Links
+    portfolioUrl: { type: String, trim: true, default: "" },
+    otherProfileUrl: { type: String, trim: true, default: "" },
+
+    // Yeh pehle se the
+    githubUrl: { type: String, trim: true },
+    linkedInUrl: { type: String, trim: true },
+
+    // About & Collaboration
+    bio: { type: String, trim: true, maxlength: 250, default: "" }, // Pehle se tha, maps to "About Me"
+    collaborationPreferences: { type: String, trim: true, default: "" },
   },
   { timestamps: true }
 );
