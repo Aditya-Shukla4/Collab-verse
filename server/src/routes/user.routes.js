@@ -1,18 +1,34 @@
+// server/src/routes/user.routes.js
+
 import express from "express";
-import authMiddleware from "../middleware/auth.middleware.js"; // Bouncer zaroori hai
 import {
   getMyProfile,
   updateUserProfile,
+  getAllUsers,
+  getUserById,
 } from "../controllers/user.controller.js";
+import auth from "../middleware/auth.middleware.js"; // <-- THIS LINE WAS MISSING
 
 const router = express.Router();
 
-// Route 1: Apni profile dekhne ke liye (VVIP pass zaroori hai)
-// GET /api/users/me
-router.get("/me", authMiddleware, getMyProfile);
+// @route   GET api/users
+// @desc    Get all users for the dashboard
+// @access  Private
+router.get("/", auth, getAllUsers);
 
-// Route 2: Apni profile update karne ke liye (VVIP pass zaroori hai)
-// PUT /api/users/profile
-router.put("/profile", authMiddleware, updateUserProfile);
+// @route   GET api/users/me
+// @desc    Get current user's profile
+// @access  Private
+router.get("/me", auth, getMyProfile);
+
+// @route   PUT api/users/profile
+// @desc    Update user profile
+// @access  Private
+router.put("/profile", auth, updateUserProfile);
+
+// @route   GET api/users/:id
+// @desc    Get a user profile by ID
+// @access  Private
+router.get("/:id", auth, getUserById); // This line now works because 'auth' is imported
 
 export default router;

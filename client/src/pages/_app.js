@@ -1,29 +1,28 @@
-// client/src/pages/_app.js
+// FINAL CODE FOR: src/pages/_app.js
 
-import "../styles/globals.css";
+import "@/styles/globals.css";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function App({ Component, pageProps }) {
   return (
     <>
-      {/* Header Bar (bina neeche wali line ke) */}
-      <header className="bg-[var(--card)]/50 backdrop-blur-sm p-4 z-10 relative">
-        {/* Is line se 'border-b' class hata di hai */}
-        <Link href="/" className="block w-full">
-          <div className="flex items-center gap-3">
+      {/* Header se 'sticky top-0 z-50' classes hata di hain */}
+      <header className="w-full p-4">
+        <div className="container mx-auto flex items-center">
+          <Link href="/" className="flex items-center gap-3">
             <Image
               src="/logo.png"
-              alt="Collab Verse Logo"
+              alt="Collab-Verse Logo"
               width={40}
               height={40}
               className="rounded-full"
             />
-            <span className="text-xl font-semibold text-[var(--foreground)]">
+            <span className="text-xl font-semibold text-white">
               Collab Verse
             </span>
-          </div>
-        </Link>
+          </Link>
+        </div>
       </header>
 
       <Component {...pageProps} />

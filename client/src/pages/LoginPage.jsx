@@ -1,10 +1,21 @@
-// client/src/pages/LoginPage.jsx
+// FINAL CODE FOR: src/pages/LoginPage.jsx
 
 import { useState } from "react";
 import Link from "next/link";
 import axios from "axios";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useRouter } from "next/router";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Eye, EyeOff, Github } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,9 +33,9 @@ export default function LoginPage() {
       );
       const { token } = response.data;
       localStorage.setItem("token", token);
-
-      router.push("/create-profile");
+      router.push("/dashboard");
     } catch (error) {
+      console.error("Login Failed:", error);
       alert(
         `Login failed: ${
           error.response
@@ -36,125 +47,100 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="hero-gradient flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        {/* The Glass Card containing the form */}
-        <div className="space-y-6 rounded-lg border border-[var(--border)] bg-[var(--card)]/50 p-8 backdrop-blur-sm">
-          {/* Form Header */}
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-[var(--foreground)]">
-              Welcome back
-            </h1>
-            <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-              Sign in to your account to continue
-            </p>
-          </div>
-
+    // Is page ka content ab yahan se shuru hota hai
+    <main
+      className="flex flex-col items-center justify-center p-4"
+      style={{ minHeight: "calc(100vh - 73px)" }}
+    >
+      {/* 73px header ki height hai, usko minus kar diya */}
+      <Card className="w-full max-w-md bg-black/30 backdrop-blur-lg border-white/20">
+        <CardHeader className="text-center">
+          <CardTitle className="text-3xl font-bold text-white">
+            Welcome back
+          </CardTitle>
+          <CardDescription className="text-slate-300">
+            Sign in to your account to continue
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
-            {/* Email Input */}
             <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="text-sm font-medium text-[var(--foreground)]"
-              >
+              <Label htmlFor="email" className="text-slate-300">
                 Email
-              </label>
-              <input
+              </Label>
+              <Input
                 id="email"
                 type="email"
-                placeholder="Enter your email"
-                className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)] transition-colors"
+                placeholder="m@example.com"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="bg-slate-900/50 border-white/30 text-white"
               />
             </div>
-
-            {/* Password Input with Eye Icon */}
             <div className="space-y-2">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium text-[var(--foreground)]"
-              >
+              <Label htmlFor="password" className="text-slate-300">
                 Password
-              </label>
+              </Label>
               <div className="relative flex items-center">
-                <input
+                <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  className="h-10 w-full rounded-md border border-[var(--input)] bg-transparent px-3 text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-[var(--primary)] transition-colors"
+                  placeholder="Your password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="bg-slate-900/50 border-white/30 text-white"
                 />
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 h-7 w-7 text-slate-300 hover:text-white"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 mr-3 text-gray-400 hover:text-white"
                 >
                   {showPassword ? (
-                    <FaEyeSlash size={20} />
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <FaEye size={20} />
+                    <Eye className="h-4 w-4" />
                   )}
-                </button>
+                </Button>
               </div>
             </div>
-
-            {/* Remember me & Forgot Password */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  className="rounded border-[var(--border)] bg-transparent text-[var(--primary)] focus:ring-[var(--primary)]"
-                />
-                <span className="text-sm text-[var(--muted-foreground)]">
-                  Remember me
-                </span>
-              </label>
-              <Link
-                href="#"
-                className="text-sm text-[var(--primary)] hover:text-[var(--primary)]/80"
-              >
-                Forgot password?
-              </Link>
-            </div>
-
-            {/* Sign In Button */}
-            <button
+            <Button
               type="submit"
-              className="h-11 w-full rounded-md bg-[var(--primary)] text-base font-bold text-[var(--primary-foreground)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[var(--primary)]/90 hover:shadow-lg hover:shadow-[var(--primary)]/30"
+              className="w-full text-base font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/30"
             >
               Sign In
-            </button>
+            </Button>
           </form>
-
-          {/* Divider */}
-          <div className="relative">
+          <div className="relative my-4">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[var(--border)]" />
+              <span className="w-full border-t border-white/20" />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-[var(--card)] px-4 text-[var(--muted-foreground)]">
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-slate-950 px-2 text-slate-400">
                 Or continue with
               </span>
             </div>
           </div>
-
-          {/* Social Login Buttons */}
           <div className="space-y-3">
-            <a
-              href="http://localhost:5000/api/auth/github"
-              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[#27292a56] text-white transition-transform hover:-translate-y-0.5 hover:bg-[#323941]"
+            <Button
+              variant="outline"
+              className="w-full h-auto py-3 bg-slate-900/50 border-white/20 text-slate-300 hover:bg-slate-800/50 hover:text-white"
+              asChild
             >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-              </svg>
-              Continue with GitHub
-            </a>
-            <button className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[#27292a56] text-white transition-transform hover:-translate-y-0.5 hover:bg-[#323941]">
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
+              <a href="http://localhost:5000/api/auth/github">
+                <Github className="mr-2 h-4 w-4" />
+                Continue with GitHub
+              </a>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full h-auto py-3 bg-slate-900/50 border-white/20 text-slate-300 hover:bg-slate-800/50 hover:text-white"
+              onClick={() => alert("Google Login abhi banayenge!")}
+            >
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   fill="#4285F4"
@@ -173,21 +159,21 @@ export default function LoginPage() {
                 />
               </svg>
               Continue with Google
-            </button>
+            </Button>
           </div>
-        </div>
-
-        {/* Sign Up Link */}
-        <p className="text-center text-sm text-[var(--muted-foreground)]">
-          Don't have an account?{" "}
-          <Link
-            href="/SignupPage"
-            className="font-semibold text-primary hover:text-primary/80"
-          >
-            Sign up
-          </Link>
-        </p>
-      </div>
-    </div>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+          <p className="text-sm text-slate-400">
+            Don't have an account?{" "}
+            <Link
+              href="/SignupPage"
+              className="font-semibold text-purple-400 hover:text-purple-300"
+            >
+              Sign up
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
+    </main>
   );
 }
