@@ -2,46 +2,50 @@
 
 import express from "express";
 import passport from "passport";
-import jwt from "jsonwebtoken";
-import { register, login } from "../controllers/auth.controller.js";
+// We are importing these functions directly, not as an object
+import {
+  register,
+  login,
+  githubCallback,
+} from "../controllers/auth.controller.js";
 
 const router = express.Router();
 
-// === Local Authentication Routes ===
+// Local Auth
 router.post("/register", register);
 router.post("/login", login);
 
-// === GitHub Authentication Routes ===
-
-// This route starts the GitHub login process
+// GitHub Auth
 router.get(
   "/github",
   passport.authenticate("github", { scope: ["user:email"], session: false })
 );
 
-// GitHub redirects the user back to this route
 router.get(
   "/github/callback",
   passport.authenticate("github", {
-    // This line is updated to point to the frontend login page on failure
     failureRedirect: "http://localhost:3000/LoginPage",
     session: false,
   }),
-  (req, res) => {
-    // On successful authentication, create a JWT token
-    const payload = {
-      user: {
-        id: req.user.id,
-      },
-    };
+  githubCallback // Use the imported function directly
+);
 
-    const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+// Google Auth
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+  })
+);
 
-    // Redirect the user to the frontend homepage with the token in the URL
-    res.redirect(`http://localhost:3000/?token=${token}`);
-  }
+router.get(
+  "/google/callback",
+  passport.authenticate("google", {
+    failureRedirect: "http://localhost:3000/LoginPage",
+    session: false,
+  }),
+  githubCallback // --- THIS IS THE FIX --- Use the same function directly
 );
 
 export default router;

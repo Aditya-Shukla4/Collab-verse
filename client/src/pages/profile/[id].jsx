@@ -1,8 +1,9 @@
-// src/pages/profile/[id].jsx
+// FINAL AND BEST CODE for: src/pages/profile/[id].jsx
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import axios from "axios";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -10,14 +11,13 @@ import { Linkedin, Github, Globe, Link as LinkIcon } from "lucide-react";
 
 export default function UserProfilePage() {
   const router = useRouter();
-  const { id } = router.query; // Get the user ID from the URL
+  const { id } = router.query;
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Only fetch data if the 'id' is available in the router query
     if (id) {
       const fetchUserProfile = async () => {
         const token = localStorage.getItem("token");
@@ -25,7 +25,6 @@ export default function UserProfilePage() {
           router.push("/LoginPage");
           return;
         }
-
         try {
           const response = await axios.get(
             `http://localhost:5000/api/users/${id}`,
@@ -41,7 +40,6 @@ export default function UserProfilePage() {
           setLoading(false);
         }
       };
-
       fetchUserProfile();
     }
   }, [id, router]);
@@ -51,22 +49,20 @@ export default function UserProfilePage() {
       <div className="text-center text-white py-10">Loading Profile...</div>
     );
   }
-
   if (error) {
     return <div className="text-center text-red-500 py-10">Error: {error}</div>;
   }
-
   if (!user) {
     return <div className="text-center text-white py-10">User not found.</div>;
   }
 
   return (
     <main className="container mx-auto p-4 md:p-8 text-white">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Left Column: Avatar and Social Links */}
-        <div className="md:col-span-1 space-y-6">
-          <Card className="bg-black/30 backdrop-blur-lg border-white/10 p-6 text-center">
-            <Avatar className="h-32 w-32 border-4 border-purple-400 mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column (IMPROVED - Single Card) */}
+        <div className="lg:col-span-1 space-y-6">
+          <Card className="bg-black/30 backdrop-blur-lg border-white/10 p-6 text-center flex flex-col items-center">
+            <Avatar className="h-32 w-32 border-4 border-purple-400">
               <AvatarImage src={user.avatarUrl} alt={user.name} />
               <AvatarFallback className="bg-slate-700 text-4xl">
                 {user.name ? user.name.substring(0, 2).toUpperCase() : "DV"}
@@ -77,22 +73,16 @@ export default function UserProfilePage() {
               {user.occupation || user.headline}
             </p>
             <p className="text-slate-400 text-sm mt-1">{user.location}</p>
-          </Card>
 
-          <Card className="bg-black/30 backdrop-blur-lg border-white/10">
-            <CardHeader>
-              <h2 className="text-xl font-semibold text-white">Social Links</h2>
-            </CardHeader>
-            <CardContent className="space-y-3">
+            <div className="flex justify-center gap-4 mt-4">
               {user.githubUrl && (
                 <a
                   href={user.githubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 hover:text-purple-400"
+                  className="text-slate-300 hover:text-purple-400"
                 >
-                  <Github size={20} />
-                  <span className="truncate">{user.githubUrl}</span>
+                  <Github size={24} />
                 </a>
               )}
               {user.linkedinUrl && (
@@ -100,10 +90,9 @@ export default function UserProfilePage() {
                   href={user.linkedinUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 hover:text-purple-400"
+                  className="text-slate-300 hover:text-purple-400"
                 >
-                  <Linkedin size={20} />
-                  <span className="truncate">{user.linkedinUrl}</span>
+                  <Linkedin size={24} />
                 </a>
               )}
               {user.portfolioUrl && (
@@ -111,10 +100,9 @@ export default function UserProfilePage() {
                   href={user.portfolioUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 hover:text-purple-400"
+                  className="text-slate-300 hover:text-purple-400"
                 >
-                  <Globe size={20} />
-                  <span className="truncate">{user.portfolioUrl}</span>
+                  <Globe size={24} />
                 </a>
               )}
               {user.otherUrl && (
@@ -122,18 +110,24 @@ export default function UserProfilePage() {
                   href={user.otherUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 hover:text-purple-400"
+                  className="text-slate-300 hover:text-purple-400"
                 >
-                  <LinkIcon size={20} />
-                  <span className="truncate">{user.otherUrl}</span>
+                  <LinkIcon size={24} />
                 </a>
               )}
-            </CardContent>
+            </div>
+
+            <Button
+              className="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white"
+              asChild
+            >
+              <a href={`mailto:${user.email}`}>Connect</a>
+            </Button>
           </Card>
         </div>
 
-        {/* Right Column: Details */}
-        <div className="md:col-span-2 space-y-6">
+        {/* Right Column */}
+        <div className="lg:col-span-2 space-y-6">
           <Card className="bg-black/30 backdrop-blur-lg border-white/10">
             <CardHeader>
               <h2 className="text-xl font-semibold text-white">About Me</h2>
@@ -144,8 +138,7 @@ export default function UserProfilePage() {
               </p>
             </CardContent>
           </Card>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="bg-black/30 backdrop-blur-lg border-white/10">
               <CardHeader>
                 <h2 className="text-xl font-semibold text-white">Skills</h2>
@@ -161,7 +154,6 @@ export default function UserProfilePage() {
                 ))}
               </CardContent>
             </Card>
-
             <Card className="bg-black/30 backdrop-blur-lg border-white/10">
               <CardHeader>
                 <h2 className="text-xl font-semibold text-white">Interests</h2>
@@ -175,7 +167,6 @@ export default function UserProfilePage() {
               </CardContent>
             </Card>
           </div>
-
           <Card className="bg-black/30 backdrop-blur-lg border-white/10">
             <CardHeader>
               <h2 className="text-xl font-semibold text-white">

@@ -82,3 +82,12 @@ export const login = async (req, res) => {
     res.status(500).json({ message: "Server error during login." });
   }
 };
+
+export const githubCallback = (req, res) => {
+  // Passport puts the authenticated user on req.user
+  const payload = { user: { id: req.user.id } };
+  const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5h" });
+
+  // Redirect back to a specific frontend page with the token
+  res.redirect(`http://localhost:3000/auth/callback?token=${token}`);
+};
