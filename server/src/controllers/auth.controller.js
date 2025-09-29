@@ -4,6 +4,8 @@ import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+// server/src/controllers/auth.controller.js
+
 export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -24,7 +26,6 @@ export const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // The new user is saved in the 'newUser' variable
     const newUser = new User({
       name,
       email,
@@ -32,15 +33,16 @@ export const register = async (req, res) => {
     });
     await newUser.save();
 
+    // --- THIS IS THE FIX ---
     // Create the token using the correct variable: newUser.id
     const payload = { user: { id: newUser.id } };
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "5h",
     });
 
-    // Return the token
     res.status(201).json({ token });
   } catch (error) {
+    // Check your server terminal for this log to see the real error
     console.error("Error during registration:", error);
     res.status(500).json({ message: "Server error during registration." });
   }
