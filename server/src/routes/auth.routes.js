@@ -2,11 +2,13 @@
 
 import express from "express";
 import passport from "passport";
-// We are importing these functions directly, not as an object
+import { protect } from "../middleware/auth.middleware.js";
+
 import {
   register,
   login,
   githubCallback,
+  getMyProfile,
 } from "../controllers/auth.controller.js";
 
 const router = express.Router();
@@ -47,5 +49,7 @@ router.get(
   }),
   githubCallback // --- THIS IS THE FIX --- Use the same function directly
 );
+
+router.get("/profile", protect, getMyProfile);
 
 export default router;

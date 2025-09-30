@@ -1,34 +1,30 @@
 // server/src/routes/user.routes.js
 
 import express from "express";
+
 import {
   getMyProfile,
   updateUserProfile,
-  getAllUsers,
   getUserById,
+  searchUsers,
 } from "../controllers/user.controller.js";
-import auth from "../middleware/auth.middleware.js"; // <-- THIS LINE WAS MISSING
+
+import { protect } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-// @route   GET api/users
-// @desc    Get all users for the dashboard
-// @access  Private
-router.get("/", auth, getAllUsers);
+// Rule #1: Handle the universal search.
+// Catches GET /api/users and GET /api/users?query=...
+router.get("/", protect, searchUsers);
 
-// @route   GET api/users/me
-// @desc    Get current user's profile
-// @access  Private
-router.get("/me", auth, getMyProfile);
+// Rule #2: Handle the specific, static route for the logged-in user's profile FIRST.
+router.get("/me", protect, getMyProfile);
 
-// @route   PUT api/users/profile
-// @desc    Update user profile
-// @access  Private
-router.put("/profile", auth, updateUserProfile);
+// Rule #3: Handle profile updates.
+router.put("/profile", protect, updateUserProfile);
 
-// @route   GET api/users/:id
-// @desc    Get a user profile by ID
-// @access  Private
-router.get("/:id", auth, getUserById); // This line now works because 'auth' is imported
+// Rule #4: NOW, handle the dynamic route for any other user's profile LAST.
+// This will only run if the path is not "/me".
+router.get("/:id", protect, getUserById);
 
 export default router;

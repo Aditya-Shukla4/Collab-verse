@@ -1,60 +1,44 @@
-// src/pages/auth/callback.jsx
-
 import { useEffect } from "react";
 import { useRouter } from "next/router";
-import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
 
+// This page is a middleman. Its only job is to catch the token from the URL
+// after a social login (like GitHub) and pass it to our main authentication system.
 export default function AuthCallback() {
   const router = useRouter();
+  // We get the 'login' function from our central AuthContext.
+  const { login } = useAuth();
 
   useEffect(() => {
     const handleAuth = async () => {
-      const { token } = router.query;
-
-      if (token) {
-        // 1. Save the token
-        localStorage.setItem("token", token);
+      // 1. Check if the router is ready and has the token in the URL.
+      if (router.isReady && router.query.token) {
+        const token = router.query.token;
 
         try {
-          // 2. Use the token to fetch the user's own profile
-          const response = await axios.get(
-            "http://localhost:5000/api/users/me",
-            {
-              headers: {
-                "x-auth-token": token,
-              },
-            }
-          );
-          const user = response.data;
+          // 2. Call the central login function. This function (in AuthContext)
+          // will save the token, set the Authorization header for all future
+          // requests, fetch the user profile, and update the global state.
+          await login(token);
 
-          // 3. Check if the profile is complete (e.g., if skills are filled out)
-          if (user.skills && user.skills.length > 0) {
-            // If profile is complete, send to dashboard
-            router.push("/dashboard");
-          } else {
-            // If profile is incomplete, send to create-profile page
-            router.push("/create-profile");
-          }
+          // 3. Once the user is logged in, send them to the create profile page.
+          // --- THIS IS THE FIX FOR YOUR REDIRECT REQUEST ---
+          router.push("/create-profile");
         } catch (error) {
-          console.error("Failed to fetch user profile after auth:", error);
-          // If something goes wrong, send to login
-          router.push("/LoginPage");
+          console.error("Authentication callback failed:", error);
+          // If something goes wrong, send them back to the login page.
+          router.push("/LoginPage?error=auth_failed");
         }
-      } else {
-        // If no token is found in URL, send to login
-        router.push("/LoginPage");
       }
     };
 
-    // Make sure router.query is populated before running
-    if (router.isReady) {
-      handleAuth();
-    }
-  }, [router.isReady, router.query, router]);
+    handleAuth();
+  }, [router.isReady, router.query, login, router]); // Effect dependencies
 
+  // Show a simple loading message to the user while we work.
   return (
-    <div className="text-white text-center p-10">
-      Authenticating... Please wait.
+    <div className="flex justify-center items-center h-screen text-white bg-gray-900">
+      <p className="text-xl">Authenticating, please wait...</p>
     </div>
   );
 }

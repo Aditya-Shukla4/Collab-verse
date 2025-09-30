@@ -1,5 +1,5 @@
 import express from "express";
-import authMiddleware from "../middleware/auth.middleware.js";
+import { protect } from "../middleware/auth.middleware.js"; // <-- YAHAN SE 'protect' AAYA
 import {
   createProject,
   getProjects,
@@ -7,8 +7,8 @@ import {
 
 const router = express.Router();
 
-router.post("/", authMiddleware, createProject);
-
-router.get("/", authMiddleware, getProjects);
+// TOH YAHAN 'protect' HI USE KARNA HAI ✅
+router.post("/", protect, createProject);
+router.get("/", protect, getProjects);
 
 export default router;

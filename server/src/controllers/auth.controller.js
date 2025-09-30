@@ -1,10 +1,6 @@
-// FINAL AND CORRECT CODE FOR: server/src/controllers/auth.controller.js
-
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-
-// server/src/controllers/auth.controller.js
 
 export const register = async (req, res) => {
   try {
@@ -33,16 +29,15 @@ export const register = async (req, res) => {
     });
     await newUser.save();
 
-    // --- THIS IS THE FIX ---
-    // Create the token using the correct variable: newUser.id
-    const payload = { user: { id: newUser.id } };
+    // ✅ THE FIX: Payload is now flat.
+    const payload = { id: newUser.id };
+
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "5h",
     });
 
     res.status(201).json({ token });
   } catch (error) {
-    // Check your server terminal for this log to see the real error
     console.error("Error during registration:", error);
     res.status(500).json({ message: "Server error during registration." });
   }
@@ -68,11 +63,8 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    const payload = {
-      user: {
-        id: user.id,
-      },
-    };
+    // ✅ THE FIX: Payload is now flat.
+    const payload = { id: user.id };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
       expiresIn: "5h",
@@ -86,10 +78,20 @@ export const login = async (req, res) => {
 };
 
 export const githubCallback = (req, res) => {
-  // Passport puts the authenticated user on req.user
-  const payload = { user: { id: req.user.id } };
+  // ✅ THE FIX: Payload is now flat.
+  const payload = { id: req.user.id };
+
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5h" });
 
-  // Redirect back to a specific frontend page with the token
   res.redirect(`http://localhost:3000/auth/callback?token=${token}`);
+};
+
+// NOTE: The getMyProfile function should be in user.controller.js, not here.
+// But if it's here, it's fine for now. It relies on a working 'protect' middleware.
+export const getMyProfile = async (req, res) => {
+  if (req.user) {
+    res.json(req.user);
+  } else {
+    res.status(404).json({ message: "User not found" });
+  }
 };

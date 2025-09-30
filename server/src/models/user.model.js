@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema(
     location: { type: String, default: "", trim: true },
     bio: { type: String, default: "", trim: true, maxlength: 500 },
     avatarUrl: { type: String, default: "" },
-    skills: { type: [String], default: [] },
+    skills: [{ type: String, trim: true }],
     interests: { type: [String], default: [] },
     linkedinUrl: { type: String, default: "", trim: true },
     githubUrl: { type: String, default: "", trim: true },
@@ -29,6 +29,12 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.methods.toJSON = function () {
+  const user = this.toObject();
+  delete user.password;
+  return user;
+};
 
 const User = mongoose.model("User", userSchema);
 

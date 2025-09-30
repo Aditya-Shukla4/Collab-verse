@@ -1,8 +1,54 @@
-// server/src/controllers/user.controller.js
-
 import User from "../models/user.model.js";
 
-// Fetches the profile of the currently logged-in user
+// --- V6 - UNIVERSAL SEARCH LOGIC (WITH DIAGNOSTICS) ---
+export const searchUsers = async (req, res) => {
+  // --- CCTV CAMERA #1: Kya hum sahi function mein hain? ---
+  console.log("\n--- 🕵️‍♂️ V6 Universal Search Triggered ---");
+  try {
+    const { query } = req.query;
+
+    // --- CCTV CAMERA #2: Frontend ne kya bheja? ---
+    console.log(`Frontend is searching for: '${query}'`);
+
+    const filter = {};
+    if (query) {
+      const searchRegex = { $regex: query, $options: "i" };
+      filter.$or = [
+        { name: searchRegex },
+        { location: searchRegex },
+        { skills: searchRegex },
+        { occupation: searchRegex },
+        { bio: searchRegex },
+      ];
+    }
+
+    // --- CCTV CAMERA #3: Humne database ko kya dhoondhne ko bola? ---
+    console.log(
+      "Constructed Mongoose Filter:",
+      JSON.stringify(filter, null, 2)
+    );
+
+    const users = await User.find(filter).select("-password");
+
+    // --- CCTV CAMERA #4 (ASLI SABOOT): Database ko kya mila? ---
+    console.log(`Database found ${users.length} user(s).`);
+    if (users.length > 0) {
+      console.log(
+        "Returning user names:",
+        users.map((u) => u.name)
+      );
+    }
+    console.log("----------------------------------------\n");
+
+    res.json(users);
+  } catch (error) {
+    console.error("Error searching users:", error);
+    res.status(500).json({ message: "Server error while searching users." });
+  }
+};
+
+// --- YOUR OTHER CONTROLLER FUNCTIONS (UNCHANGED) ---
+
 export const getMyProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
@@ -16,7 +62,6 @@ export const getMyProfile = async (req, res) => {
   }
 };
 
-// Updates the profile of the currently logged-in user
 export const updateUserProfile = async (req, res) => {
   try {
     const {
@@ -60,21 +105,10 @@ export const updateUserProfile = async (req, res) => {
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
-
     res.json(updatedUser);
   } catch (error) {
     console.error("Error updating user profile:", error);
     res.status(500).json({ message: "Server error while updating profile." });
-  }
-};
-
-export const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find({}).select("-password");
-    res.json(users);
-  } catch (error) {
-    console.error("Error fetching all users:", error);
-    res.status(500).json({ message: "Server error while fetching users." });
   }
 };
 
@@ -87,7 +121,6 @@ export const getUserById = async (req, res) => {
     res.json(user);
   } catch (error) {
     console.error("Error fetching user by ID:", error);
-    // Handle cases where the ID is not a valid MongoDB ObjectId
     if (error.kind === "ObjectId") {
       return res.status(404).json({ message: "User not found" });
     }
