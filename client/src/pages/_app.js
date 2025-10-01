@@ -5,11 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge"; // Badge ko import kar
+import { Badge } from "@/components/ui/badge";
+import { PlusCircle } from "lucide-react";
 
-// --- REPLACE YOUR OLD AppHeader WITH THIS NEW ONE ---
 function AppHeader() {
-  // User object bhi nikaal le context se
   const { isAuthenticated, user, logout } = useAuth();
 
   return (
@@ -31,7 +30,6 @@ function AppHeader() {
         <nav>
           <ul className="flex items-center gap-4">
             {isAuthenticated ? (
-              // --- LOGGED-IN USER VIEW ---
               <>
                 <li>
                   <Link
@@ -62,8 +60,25 @@ function AppHeader() {
                     My Profile
                   </Link>
                 </li>
+                {/* --- NEW BUTTON ADDED HERE --- */}
                 <li>
-                  <Button size="sm" variant="destructive" onClick={logout}>
+                  <Button
+                    asChild
+                    size="sm"
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    <Link href="/create-project">
+                      <PlusCircle className="mr-2 h-4 w-4" /> Create Project
+                    </Link>
+                  </Button>
+                </li>
+                <li>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={logout}
+                    className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  >
                     Logout
                   </Button>
                 </li>
@@ -99,7 +114,6 @@ function AppHeader() {
   );
 }
 
-// Ye neeche wala part same rahega
 export default function App({ Component, pageProps }) {
   return (
     <AuthProvider>

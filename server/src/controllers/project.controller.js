@@ -1,49 +1,57 @@
+// server/src/controllers/project.controller.js
+
 import Project from "../models/project.model.js";
 
-// Officer 1: Naya project banane ke liye
+// Create a new project
 export const createProject = async (req, res) => {
   try {
-    // 1. User se naye project ka title lo
-    const { title } = req.body;
+    const { title, description, techStack, rolesNeeded, githubRepo, liveUrl } =
+      req.body;
 
-    // 2. YEH HAI ASLI JAADU: User ki ID kahan se aayi?
-    // Yaad hai, hamare bouncer (authMiddleware) ne request ke upar ek sticker laga diya tha?
-    // Yeh wahi sticker hai. Humein pata hai ki yeh request kis user ne bheji hai.
-    const ownerId = req.user.id;
+    if (!title || !description || !techStack || techStack.length === 0) {
+      return res.status(400).json({
+        message: "Title, description, and tech stack are required.",
+      });
+    }
 
-    // 3. Ek naya project banao, jismein title aur owner ki ID ho
-    const newProject = new Project({
+    const project = new Project({
       title,
-      owner: ownerId,
+      description,
+      techStack,
+      rolesNeeded: rolesNeeded || [],
+      githubRepo: githubRepo || "",
+      liveUrl: liveUrl || "",
+      createdBy: req.user.id,
+      members: [req.user.id],
     });
 
-    // 4. Naye project ko database mein save karo
-    const savedProject = await newProject.save();
+    await project.save();
 
-    // 5. Naya project response mein wapas bhej do
-    res.status(201).json(savedProject);
+    // Populate creator details before sending response
+    const populatedProject = await Project.findById(project._id).populate(
+      "createdBy",
+      "name occupation avatarUrl"
+    );
+
+    console.log("✅ Project created successfully:", populatedProject.title);
+    res.status(201).json(populatedProject);
   } catch (error) {
-    console.error("Error creating project:", error);
+    console.error("❌ ERROR in createProject:", error);
     res.status(500).json({ message: "Server error while creating project." });
   }
 };
 
-// Officer 2: Logged-in user ke saare projects laane ke liye
+// Get all projects
 export const getProjects = async (req, res) => {
   try {
-    // 1. Phir se, bouncer se user ki ID nikaalo
-    const userId = req.user.id;
+    const projects = await Project.find({})
+      .populate("createdBy", "name occupation avatarUrl")
+      .populate("members", "name avatarUrl")
+      .sort({ createdAt: -1 });
 
-    // 2. Database mein jao aur woh saare projects dhoondho jinka 'owner'
-    // is user ki ID se match karta hai.
-    const projects = await Project.find({ owner: userId }).sort({
-      createdAt: -1,
-    }); // Naye waale sabse upar
-
-    // 3. Projects ki list response mein wapas bhej do
-    res.json(projects);
+    res.status(200).json(projects);
   } catch (error) {
-    console.error("Error fetching projects:", error);
+    console.error("❌ ERROR in getProjects:", error);
     res.status(500).json({ message: "Server error while fetching projects." });
   }
 };

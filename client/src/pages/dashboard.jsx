@@ -1,23 +1,64 @@
-import { useState, useEffect, useRef } from "react";
+// client/src/pages/dashboard.jsx
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/axios";
 
-// Shadcn UI Imports
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-// --- V7 UserCard COMPONENT with the reference design ---
+// ProjectCard with safe property access
+const ProjectCard = ({ project }) => (
+  <Card className="bg-zinc-900 border border-zinc-800 text-white flex flex-col h-full p-6">
+    <CardHeader className="p-0 mb-4">
+      <CardTitle className="text-lg font-semibold hover:underline">
+        <Link href={`/projects/${project._id}`}>{project.title}</Link>
+      </CardTitle>
+      <CardDescription className="text-zinc-400 text-sm pt-1">
+        Posted by {project.createdBy?.name || "Unknown"}
+      </CardDescription>
+    </CardHeader>
+    <CardContent className="p-0 flex-grow mb-4">
+      <p className="text-zinc-400 text-sm line-clamp-2 mb-4">
+        {project.description}
+      </p>
+      <h3 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold mb-2">
+        Tech Stack
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {project.techStack?.slice(0, 4).map((tech, index) => (
+          <Badge
+            key={`${tech}-${index}`}
+            variant="secondary"
+            className="bg-zinc-800 border-zinc-700 text-zinc-300 font-normal"
+          >
+            {tech}
+          </Badge>
+        ))}
+      </div>
+    </CardContent>
+    <CardFooter className="p-0">
+      <Link href={`/projects/${project._id}`} passHref className="w-full">
+        <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold">
+          View Project
+        </Button>
+      </Link>
+    </CardFooter>
+  </Card>
+);
+
+// UserCard Component
 const UserCard = ({ dev }) => (
   <Card className="bg-zinc-900 border border-zinc-800 text-white flex flex-col h-full p-6">
     <div className="flex items-center gap-4 mb-4">
@@ -71,11 +112,11 @@ export default function DashboardPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
 
   const [users, setUsers] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [universalQuery, setUniversalQuery] = useState("");
-  const hasFetchedInitial = useRef(false);
 
-  // Auth check - redirect if not authenticated
+  // Auth check
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
@@ -83,49 +124,43 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // Fetch users effect
+  // Fetch data
   useEffect(() => {
-    // Don't run if not authenticated or still loading auth
     if (!isAuthenticated || authLoading) return;
 
-    const fetchUsers = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Build URL properly - NEVER pass undefined
         let url = "/users";
         const trimmedQuery = universalQuery?.trim() || "";
 
-        // Only add query param if there's actual content
         if (trimmedQuery.length > 0) {
           url += `?query=${encodeURIComponent(trimmedQuery)}`;
         }
 
-        console.log("🔍 Fetching users with URL:", url);
-        const response = await api.get(url);
+        const [usersResponse, projectsResponse] = await Promise.all([
+          api.get(url),
+          api.get("/projects"),
+        ]);
 
         // Filter out current user
         const currentUserId = user?._id;
         if (currentUserId) {
-          setUsers(response.data.filter((u) => u._id !== currentUserId));
+          setUsers(usersResponse.data.filter((u) => u._id !== currentUserId));
         } else {
-          setUsers(response.data);
+          setUsers(usersResponse.data);
         }
+
+        setProjects(projectsResponse.data);
       } catch (error) {
-        console.error("Failed to fetch users:", error);
+        console.error("Failed to fetch dashboard data:", error);
       } finally {
         setIsLoading(false);
-        hasFetchedInitial.current = true;
       }
     };
 
-    // Debounce search - but fetch immediately on first load
-    if (!hasFetchedInitial.current && universalQuery === "") {
-      fetchUsers();
-      return;
-    }
-
     const debounceTimer = setTimeout(() => {
-      fetchUsers();
+      fetchData();
     }, 500);
 
     return () => clearTimeout(debounceTimer);
@@ -142,35 +177,60 @@ export default function DashboardPage() {
           Welcome back, {user?.name || "Developer"}!
         </h1>
         <p className="text-slate-400">
-          Find your next collaborator. Search by name, skills, or location.
+          Find collaborators or join an existing project.
         </p>
       </div>
 
-      <div className="mb-8">
-        <Input
-          type="text"
-          placeholder="Search by name, tech stack, or location..."
-          className="w-full p-6 text-lg bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-          value={universalQuery}
-          onChange={(e) => setUniversalQuery(e.target.value)}
-        />
+      {/* Latest Projects Section */}
+      <div className="mb-12">
+        <h2 className="text-2xl font-bold tracking-tight text-white mb-6">
+          Latest Projects
+        </h2>
+        {isLoading ? (
+          <div className="text-center text-white">Loading projects...</div>
+        ) : projects.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+            {projects.map((project) => (
+              <ProjectCard key={project._id} project={project} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-slate-400">
+            No projects found. Create one to get started!
+          </p>
+        )}
       </div>
 
-      {isLoading ? (
-        <div className="text-center text-white">
-          Searching for developers...
+      {/* Developer Search Section */}
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-white mb-6">
+          Find Developers
+        </h2>
+        <div className="mb-8">
+          <Input
+            type="text"
+            placeholder="Search by name, tech stack, or location..."
+            className="w-full p-6 text-lg bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            value={universalQuery}
+            onChange={(e) => setUniversalQuery(e.target.value)}
+          />
         </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-          {users.length > 0 ? (
-            users.map((dev) => <UserCard key={dev._id} dev={dev} />)
-          ) : (
-            <p className="col-span-full text-center text-slate-400">
-              No developers found matching your criteria.
-            </p>
-          )}
-        </div>
-      )}
+        {isLoading ? (
+          <div className="text-center text-white">
+            Searching for developers...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+            {users.length > 0 ? (
+              users.map((dev) => <UserCard key={dev._id} dev={dev} />)
+            ) : (
+              <p className="col-span-full text-center text-slate-400">
+                No developers found matching your criteria.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </main>
   );
 }

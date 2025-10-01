@@ -1,5 +1,7 @@
+// server/src/routes/project.routes.js
+
 import express from "express";
-import { protect } from "../middleware/auth.middleware.js"; // <-- YAHAN SE 'protect' AAYA
+import { protect } from "../middleware/auth.middleware.js";
 import {
   createProject,
   getProjects,
@@ -7,8 +9,10 @@ import {
 
 const router = express.Router();
 
-// TOH YAHAN 'protect' HI USE KARNA HAI ✅
+// Create project - Protected (must be logged in)
 router.post("/", protect, createProject);
-router.get("/", protect, getProjects);
+
+// Get all projects - Public (anyone can view)
+router.get("/", getProjects);
 
 export default router;
