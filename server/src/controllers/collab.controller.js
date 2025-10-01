@@ -112,3 +112,23 @@ export const rejectCollabRequest = async (req, res) => {
     res.status(500).json({ message: "Server error." });
   }
 };
+
+export const getReceivedRequests = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findById(userId).populate({
+      path: "receivedCollabRequests",
+      select: "_id name occupation avatarUrl skills location",
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    res.status(200).json(user.receivedCollabRequests);
+  } catch (error) {
+    console.error("ERROR in getReceivedRequests:", error);
+    res.status(500).json({ message: "Server error while fetching requests." });
+  }
+};
