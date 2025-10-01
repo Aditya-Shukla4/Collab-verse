@@ -1,4 +1,4 @@
-// FINAL CLEAN SCHEMA for: server/src/models/user.model.js
+// server/src/models/user.model.js
 
 import mongoose from "mongoose";
 
@@ -26,6 +26,29 @@ const userSchema = new mongoose.Schema(
     portfolioUrl: { type: String, default: "", trim: true },
     otherUrl: { type: String, default: "", trim: true },
     collabPrefs: { type: String, default: "", trim: true },
+
+    // 🔥 COLLABORATION FIELDS - THESE WERE MISSING!
+    colleagues: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: [],
+      },
+    ],
+    sentCollabRequests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: [],
+      },
+    ],
+    receivedCollabRequests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        default: [],
+      },
+    ],
   },
   { timestamps: true }
 );

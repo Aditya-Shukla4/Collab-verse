@@ -83,7 +83,6 @@ export default function CreateProfilePage() {
       // My logic for the API call is correct and secure
       await api.put("/users/profile", dataToSend);
 
-      alert("Profile updated successfully!");
       router.push("/dashboard");
     } catch (error) {
       console.error("Failed to update profile:", error);

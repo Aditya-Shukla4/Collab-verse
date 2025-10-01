@@ -13,8 +13,7 @@ import testRoutes from "./src/routes/test.routes.js";
 import authRoutes from "./src/routes/auth.routes.js";
 import projectRoutes from "./src/routes/project.routes.js";
 import userRoutes from "./src/routes/user.routes.js";
-
-// Import and execute the passport config (now that .env is loaded)
+import collabRoutes from "./src/routes/collab.routes.js";
 import "./src/config/passport.js";
 
 const app = express();
@@ -22,6 +21,7 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({ origin: "http://localhost:3000" }));
+app.use("/api/collabs", collabRoutes);
 app.use(express.json());
 app.use(passport.initialize());
 

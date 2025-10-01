@@ -1,16 +1,13 @@
 import User from "../models/user.model.js";
 
-// --- V6 - UNIVERSAL SEARCH LOGIC (WITH DIAGNOSTICS) ---
+// --- Universal Search Logic ---
 export const searchUsers = async (req, res) => {
-  // --- CCTV CAMERA #1: Kya hum sahi function mein hain? ---
-  console.log("\n--- 🕵️‍♂️ V6 Universal Search Triggered ---");
   try {
-    const { query } = req.query;
-
-    // --- CCTV CAMERA #2: Frontend ne kya bheja? ---
-    console.log(`Frontend is searching for: '${query}'`);
+    const rawQuery = req.query.query;
+    const query = rawQuery && rawQuery.trim() !== "" ? rawQuery.trim() : null;
 
     const filter = {};
+
     if (query) {
       const searchRegex = { $regex: query, $options: "i" };
       filter.$or = [
@@ -22,24 +19,7 @@ export const searchUsers = async (req, res) => {
       ];
     }
 
-    // --- CCTV CAMERA #3: Humne database ko kya dhoondhne ko bola? ---
-    console.log(
-      "Constructed Mongoose Filter:",
-      JSON.stringify(filter, null, 2)
-    );
-
     const users = await User.find(filter).select("-password");
-
-    // --- CCTV CAMERA #4 (ASLI SABOOT): Database ko kya mila? ---
-    console.log(`Database found ${users.length} user(s).`);
-    if (users.length > 0) {
-      console.log(
-        "Returning user names:",
-        users.map((u) => u.name)
-      );
-    }
-    console.log("----------------------------------------\n");
-
     res.json(users);
   } catch (error) {
     console.error("Error searching users:", error);
@@ -47,8 +27,7 @@ export const searchUsers = async (req, res) => {
   }
 };
 
-// --- YOUR OTHER CONTROLLER FUNCTIONS (UNCHANGED) ---
-
+// --- Get logged-in user's profile ---
 export const getMyProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
@@ -62,6 +41,7 @@ export const getMyProfile = async (req, res) => {
   }
 };
 
+// --- Update user profile ---
 export const updateUserProfile = async (req, res) => {
   try {
     const {
@@ -112,6 +92,7 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
+// --- Get any user's profile by ID ---
 export const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");

@@ -1,52 +1,144 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { useAuth } from "@/context/AuthContext"; // CORRECT: Our central auth hook
-import api from "@/api/axios"; // CORRECT: Our central API client
+import { useAuth } from "@/context/AuthContext";
+import api from "@/api/axios";
 
-// Your beautiful Shadcn UI components & icons
+// UI Components
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Linkedin, Github, Globe, Link as LinkIcon } from "lucide-react";
+import {
+  Linkedin,
+  Github,
+  Globe,
+  Link as LinkIcon,
+  UserPlus,
+  Check,
+  X,
+} from "lucide-react";
 
 export default function UserProfilePage() {
   const router = useRouter();
   const { id } = router.query;
 
-  // CORRECT LOGIC: Get auth state from the central context
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const {
+    user: loggedInUser,
+    isAuthenticated,
+    loading: authLoading,
+    refetchUser,
+  } = useAuth();
 
-  // Renamed from 'user' to 'userProfile' to avoid confusion with the logged-in user from context
   const [userProfile, setUserProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [relationshipStatus, setRelationshipStatus] = useState("loading");
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
-  // CORRECT LOGIC: Robust useEffect for secure data fetching
+  // Effect to fetch the profile data
   useEffect(() => {
-    if (authLoading) return; // Wait for auth to be checked
+    if (authLoading) return;
     if (!isAuthenticated) {
-      router.push("/LoginPage"); // Kick out unauthenticated users
+      router.push("/LoginPage");
       return;
     }
-    if (id) {
-      const fetchUserProfile = async () => {
-        try {
-          // CORRECT LOGIC: Use the smart 'api' client which handles headers automatically
-          const response = await api.get(`/users/${id}`);
-          setUserProfile(response.data);
-        } catch (err) {
-          console.error("Failed to fetch user profile:", err);
-          setError("Could not load user profile.");
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchUserProfile();
-    }
+    if (!id) return; // Don't fetch if id is not available yet
+
+    const fetchUserProfile = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await api.get(`/users/${id}`);
+        setUserProfile(response.data);
+      } catch (err) {
+        console.error("Failed to fetch user profile:", err);
+        setError("Could not load user profile.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUserProfile();
   }, [id, isAuthenticated, authLoading, router]);
 
-  if (loading || authLoading) {
+  // Effect to determine the relationship status
+  useEffect(() => {
+    if (loggedInUser && userProfile) {
+      if (loggedInUser.colleagues?.includes(userProfile._id)) {
+        setRelationshipStatus("colleagues");
+      } else if (loggedInUser.sentCollabRequests?.includes(userProfile._id)) {
+        setRelationshipStatus("sent");
+      } else if (
+        loggedInUser.receivedCollabRequests?.includes(userProfile._id)
+      ) {
+        setRelationshipStatus("received");
+      } else {
+        setRelationshipStatus("none");
+      }
+    }
+  }, [loggedInUser, userProfile]);
+
+  // API Handlers with proper validation
+  const handleSendRequest = async () => {
+    if (!userProfile?._id) {
+      console.error("No user profile ID available");
+      return;
+    }
+
+    setIsActionLoading(true);
+    try {
+      await api.post(`/collabs/send-request/${userProfile._id}`);
+      await refetchUser();
+      // Optimistically update the UI
+      setRelationshipStatus("sent");
+    } catch (error) {
+      console.error("Failed to send request:", error);
+      alert("Error sending request. Please try again.");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleAcceptRequest = async () => {
+    if (!userProfile?._id) {
+      console.error("No user profile ID available");
+      return;
+    }
+
+    setIsActionLoading(true);
+    try {
+      await api.put(`/collabs/accept-request/${userProfile._id}`);
+      await refetchUser();
+      // Optimistically update the UI
+      setRelationshipStatus("colleagues");
+    } catch (error) {
+      console.error("Failed to accept request:", error);
+      alert("Error accepting request. Please try again.");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleRejectRequest = async () => {
+    if (!userProfile?._id) {
+      console.error("No user profile ID available");
+      return;
+    }
+
+    setIsActionLoading(true);
+    try {
+      await api.delete(`/collabs/reject-request/${userProfile._id}`);
+      await refetchUser();
+      // Optimistically update the UI
+      setRelationshipStatus("none");
+    } catch (error) {
+      console.error("Failed to reject request:", error);
+      alert("Error rejecting request. Please try again.");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  if (isLoading || authLoading) {
     return (
       <div className="text-center text-white py-10">Loading Profile...</div>
     );
@@ -58,11 +150,74 @@ export default function UserProfilePage() {
     return <div className="text-center text-white py-10">User not found.</div>;
   }
 
-  // YOUR BEAUTIFUL UI: Now powered by the correct logic
+  // Renders the correct action button
+  const renderActionButtons = () => {
+    if (loggedInUser?._id === userProfile._id) {
+      return null;
+    }
+
+    switch (relationshipStatus) {
+      case "colleagues":
+        return (
+          <Button disabled className="w-full bg-green-600/50 text-white">
+            <Check className="mr-2 h-4 w-4" /> Colleagues
+          </Button>
+        );
+      case "sent":
+        return (
+          <Button disabled className="w-full bg-zinc-700 text-white">
+            Request Sent
+          </Button>
+        );
+      case "received":
+        return (
+          <div className="space-y-3">
+            <div className="bg-purple-900/30 border border-purple-500/50 rounded-lg p-3 mb-3">
+              <p className="text-purple-200 text-sm text-center font-medium">
+                Collaboration Request Received
+              </p>
+            </div>
+            <Button
+              onClick={handleAcceptRequest}
+              disabled={isActionLoading}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
+            >
+              <Check className="mr-2 h-4 w-4" /> Accept Request
+            </Button>
+            <Button
+              onClick={handleRejectRequest}
+              disabled={isActionLoading}
+              variant="outline"
+              className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+            >
+              <X className="mr-2 h-4 w-4" /> Decline
+            </Button>
+          </div>
+        );
+      case "none":
+        return (
+          <Button
+            onClick={handleSendRequest}
+            disabled={isActionLoading}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            {isActionLoading ? "Sending..." : "Send Collab Request"}
+          </Button>
+        );
+      default:
+        return (
+          <Button disabled className="w-full">
+            Loading...
+          </Button>
+        );
+    }
+  };
+
   return (
     <main className="container mx-auto p-4 md:p-8 text-white">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column (IMPROVED - Single Card) */}
+        {/* Left Column */}
         <div className="lg:col-span-1 space-y-6">
           <Card className="bg-black/30 backdrop-blur-lg border-white/10 p-6 text-center flex flex-col items-center">
             <Avatar className="h-32 w-32 border-4 border-purple-400">
@@ -82,7 +237,6 @@ export default function UserProfilePage() {
             <p className="text-slate-400 text-sm mt-1">
               {userProfile.location}
             </p>
-
             <div className="flex justify-center gap-4 mt-4">
               {userProfile.githubUrl && (
                 <a
@@ -125,13 +279,7 @@ export default function UserProfilePage() {
                 </a>
               )}
             </div>
-
-            <Button
-              className="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white"
-              asChild
-            >
-              <a href={`mailto:${userProfile.email}`}>Connect</a>
-            </Button>
+            <div className="w-full mt-6">{renderActionButtons()}</div>
           </Card>
         </div>
 
@@ -153,14 +301,18 @@ export default function UserProfilePage() {
                 <h2 className="text-xl font-semibold text-white">Skills</h2>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-2">
-                {userProfile.skills?.map((skill) => (
-                  <Badge
-                    key={skill}
-                    className="bg-purple-600/50 text-purple-200 border-purple-500"
-                  >
-                    {skill}
-                  </Badge>
-                ))}
+                {userProfile.skills?.length > 0 ? (
+                  userProfile.skills.map((skill) => (
+                    <Badge
+                      key={skill}
+                      className="bg-purple-600/50 text-purple-200 border-purple-500"
+                    >
+                      {skill}
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-slate-400 text-sm">No skills listed</p>
+                )}
               </CardContent>
             </Card>
             <Card className="bg-black/30 backdrop-blur-lg border-white/10">
@@ -168,11 +320,15 @@ export default function UserProfilePage() {
                 <h2 className="text-xl font-semibold text-white">Interests</h2>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-2">
-                {userProfile.interests?.map((interest) => (
-                  <Badge key={interest} variant="secondary">
-                    {interest}
-                  </Badge>
-                ))}
+                {userProfile.interests?.length > 0 ? (
+                  userProfile.interests.map((interest) => (
+                    <Badge key={interest} variant="secondary">
+                      {interest}
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-slate-400 text-sm">No interests listed</p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -193,4 +349,3 @@ export default function UserProfilePage() {
     </main>
   );
 }
-  
