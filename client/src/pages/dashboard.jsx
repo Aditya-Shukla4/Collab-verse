@@ -5,8 +5,6 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/axios";
 import ProjectCard from "@/components/projects/ProjectCard";
-
-// Shadcn UI Imports
 import {
   Card,
   CardContent,
@@ -18,8 +16,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Check, X } from "lucide-react";
 
-// UserCard Component (kept in this file as per your code)
 const UserCard = ({ dev }) => (
   <Card className="bg-zinc-900 border border-zinc-800 text-white flex flex-col h-full p-6">
     <div className="flex items-center gap-4 mb-4">
@@ -79,22 +77,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!isAuthenticated) {
-      router.push("/LoginPage");
-    }
+    if (!isAuthenticated) router.push("/LoginPage");
   }, [isAuthenticated, authLoading, router]);
 
-  // Handler for when a project is deleted from a ProjectCard
-  const handleProjectDeleted = (deletedProjectId) => {
-    setProjects((currentProjects) =>
-      currentProjects.filter((p) => p._id !== deletedProjectId)
-    );
-  };
-
-  // Fetch data
   useEffect(() => {
     if (!isAuthenticated || authLoading) return;
-
     const fetchData = async () => {
       setIsLoading(true);
       try {
@@ -104,13 +91,12 @@ export default function DashboardPage() {
           ),
           api.get("/projects"),
         ]);
-
         const currentUserId = user?._id;
-        if (currentUserId) {
-          setUsers(usersResponse.data.filter((u) => u._id !== currentUserId));
-        } else {
-          setUsers(usersResponse.data);
-        }
+        setUsers(
+          currentUserId
+            ? usersResponse.data.filter((u) => u._id !== currentUserId)
+            : usersResponse.data
+        );
         setProjects(projectsResponse.data);
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -118,15 +104,17 @@ export default function DashboardPage() {
         setIsLoading(false);
       }
     };
-
     const debounceTimer = setTimeout(() => {
       fetchData();
     }, 500);
-
     return () => clearTimeout(debounceTimer);
   }, [universalQuery, isAuthenticated, authLoading, user]);
 
-  if (authLoading || !isAuthenticated || isLoading) {
+  const handleProjectDeleted = (deletedProjectId) => {
+    setProjects((current) => current.filter((p) => p._id !== deletedProjectId));
+  };
+
+  if (authLoading || isLoading) {
     return (
       <div className="text-center py-10 text-white">Loading Dashboard...</div>
     );
@@ -147,17 +135,11 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-bold tracking-tight text-white mb-6">
           Latest Projects
         </h2>
-        {projects.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-            {projects.map((project) => (
-              <ProjectCard key={project._id} project={project} />
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-slate-400">
-            No projects found. Create one to get started!
-          </p>
-        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+          {projects.map((project) => (
+            <ProjectCard key={project._id} project={project} isOwner={false} />
+          ))}
+        </div>
       </div>
 
       <div>
@@ -170,20 +152,14 @@ export default function DashboardPage() {
             placeholder="Search by name, tech stack, or location..."
             className="w-full p-6 text-lg bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
             value={universalQuery}
-            onChange={(e) => setUniversalQuery(e.target.value)}
+            onChange={(e) => setUniversalQuery(e.g.e.target.value)}
           />
         </div>
-        {users.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-            {users.map((dev) => (
-              <UserCard key={dev._id} dev={dev} />
-            ))}
-          </div>
-        ) : (
-          <p className="col-span-full text-center text-slate-400">
-            No developers found matching your criteria.
-          </p>
-        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+          {users.map((dev) => (
+            <UserCard key={dev._id} dev={dev} />
+          ))}
+        </div>
       </div>
     </main>
   );

@@ -5,11 +5,24 @@ import { useRouter } from "next/router";
 import api from "@/api/axios";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Github,
   ExternalLink,
@@ -18,6 +31,7 @@ import {
   Edit,
   Check,
   X,
+  PlusCircle,
 } from "lucide-react";
 
 export default function ProjectDetailsPage() {
@@ -30,36 +44,31 @@ export default function ProjectDetailsPage() {
   const [error, setError] = useState(null);
   const [joinStatus, setJoinStatus] = useState("loading");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [colleagues, setColleagues] = useState([]);
+  const [inviteStatus, setInviteStatus] = useState({});
 
-  // Fetch project data
-  useEffect(() => {
+  const fetchProject = async () => {
     if (!id) return;
+    try {
+      const response = await api.get(`/projects/${id}`);
+      setProject(response.data);
+    } catch (err) {
+      console.error("Failed to fetch project:", err);
+      setError("Could not load the project.");
+    }
+  };
 
-    const fetchProject = async () => {
-      setIsLoading(true);
-      try {
-        const response = await api.get(`/projects/${id}`);
-        setProject(response.data);
-      } catch (err) {
-        console.error("Failed to fetch project:", err);
-        setError("Could not load the project.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchProject();
+  useEffect(() => {
+    setIsLoading(true);
+    fetchProject().finally(() => setIsLoading(false));
   }, [id]);
 
-  // Determine join button status
   useEffect(() => {
     if (!project || !loggedInUser) {
       setJoinStatus("not_logged_in");
       return;
     }
-
-    console.log("LOGGED IN USER:", loggedInUser);
-    console.log("PROJECT DATA:", project);
-
     if (project.createdBy._id === loggedInUser._id) {
       setJoinStatus("owner");
     } else if (
@@ -75,46 +84,55 @@ export default function ProjectDetailsPage() {
     }
   }, [project, loggedInUser]);
 
-  // Request to join project
+  useEffect(() => {
+    if (isInviteModalOpen) {
+      const fetchColleagues = async () => {
+        try {
+          const response = await api.get("/users/me/colleagues");
+          setColleagues(response.data);
+        } catch (err) {
+          console.error("Failed to fetch colleagues:", err);
+        }
+      };
+      fetchColleagues();
+    }
+  }, [isInviteModalOpen]);
+
   const handleRequestToJoin = async () => {
     setIsSubmitting(true);
     try {
       await api.post(`/projects/${id}/request-join`);
       setJoinStatus("requested");
-      // Refetch project to update join requests
-      const response = await api.get(`/projects/${id}`);
-      setProject(response.data);
     } catch (err) {
-      console.error("Failed to send join request:", err);
       alert(err.response?.data?.message || "Failed to send request.");
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  // Accept join request
   const handleAcceptRequest = async (applicantId) => {
     try {
       await api.put(`/projects/${id}/accept-join/${applicantId}`);
-      // Refetch project
-      const response = await api.get(`/projects/${id}`);
-      setProject(response.data);
+      fetchProject();
     } catch (err) {
-      console.error("Failed to accept request:", err);
       alert(err.response?.data?.message || "Failed to accept request.");
     }
   };
-
-  // Reject join request
   const handleRejectRequest = async (applicantId) => {
     try {
       await api.delete(`/projects/${id}/reject-join/${applicantId}`);
-      // Refetch project
-      const response = await api.get(`/projects/${id}`);
-      setProject(response.data);
+      fetchProject();
     } catch (err) {
-      console.error("Failed to reject request:", err);
       alert(err.response?.data?.message || "Failed to reject request.");
+    }
+  };
+  const handleInvite = async (colleagueId) => {
+    setInviteStatus((prev) => ({ ...prev, [colleagueId]: "sending" }));
+    try {
+      await api.post(`/projects/${id}/invite/${colleagueId}`);
+      setInviteStatus((prev) => ({ ...prev, [colleagueId]: "sent" }));
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to send invite.");
+      setInviteStatus((prev) => ({ ...prev, [colleagueId]: "failed" }));
     }
   };
 
@@ -160,58 +178,113 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading)
     return (
       <div className="text-center text-white py-20">Loading Project...</div>
     );
-  }
-  if (error) {
+  if (error)
     return <div className="text-center text-red-500 py-20">{error}</div>;
-  }
-  if (!project) {
+  if (!project)
     return (
       <div className="text-center text-white py-20">Project not found.</div>
     );
-  }
 
-  const isOwner = loggedInUser && project.createdBy._id === loggedInUser._id;
+  const isOwner = loggedInUser?._id === project.createdBy._id;
+  const isMember = project.members.some(
+    (member) => member._id === loggedInUser?._id
+  );
 
   return (
-    <main className="container mx-auto p-4 md:p-8 text-white">
+    <main>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="space-y-2">
-            <Badge
-              variant="secondary"
-              className="bg-purple-600/20 text-purple-300 border-purple-500/50 mb-2"
-            >
-              {project.status}
-            </Badge>
-            <h1 className="text-4xl font-bold tracking-tighter">
-              {project.title}
-            </h1>
-            <div className="flex items-center gap-2 text-slate-400">
-              <span>Posted by</span>
-              <Link
-                href={`/profile/${project.createdBy._id}`}
-                className="flex items-center gap-2 hover:text-white"
+          <div className="flex justify-between items-start">
+            <div className="space-y-2">
+              <Badge
+                variant="secondary"
+                className="bg-purple-600/20 text-purple-300 border-purple-500/50 mb-2"
               >
-                <Avatar className="h-6 w-6">
-                  <AvatarImage
-                    src={project.createdBy.avatarUrl}
-                    alt={project.createdBy.name}
-                  />
-                  <AvatarFallback>
-                    {project.createdBy.name.substring(0, 1)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="font-medium">{project.createdBy.name}</span>
-              </Link>
+                {project.status}
+              </Badge>
+              <h1 className="text-4xl font-bold tracking-tighter">
+                {project.title}
+              </h1>
+              <div className="flex items-center gap-2 text-slate-400">
+                <span>Posted by</span>
+                <Link
+                  href={`/profile/${project.createdBy._id}`}
+                  className="flex items-center gap-2 hover:text-white"
+                >
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage
+                      src={project.createdBy.avatarUrl}
+                      alt={project.createdBy.name}
+                    />
+                    <AvatarFallback>
+                      {project.createdBy.name.substring(0, 1)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium">{project.createdBy.name}</span>
+                </Link>
+              </div>
             </div>
+            {(isOwner || isMember) && (
+              <Dialog
+                open={isInviteModalOpen}
+                onOpenChange={setIsInviteModalOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button className="bg-purple-600 hover:bg-purple-700">
+                    <PlusCircle className="mr-2 h-4 w-4" /> Invite
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+                  <DialogHeader>
+                    <DialogTitle>Invite a Colleague</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4 max-h-60 overflow-y-auto">
+                    {colleagues.length > 0 ? (
+                      colleagues.map((colleague) => (
+                        <div
+                          key={colleague._id}
+                          className="flex items-center justify-between"
+                        >
+                          <p>{colleague.name}</p>
+                          <Button
+                            size="sm"
+                            onClick={() => handleInvite(colleague._id)}
+                            disabled={
+                              inviteStatus[colleague._id] === "sent" ||
+                              inviteStatus[colleague._id] === "sending" ||
+                              project.members.some(
+                                (m) => m._id === colleague._id
+                              )
+                            }
+                          >
+                            {project.members.some(
+                              (m) => m._id === colleague._id
+                            )
+                              ? "Already Member"
+                              : inviteStatus[colleague._id] === "sending"
+                              ? "Sending..."
+                              : inviteStatus[colleague._id] === "sent"
+                              ? "Invited"
+                              : "Invite"}
+                          </Button>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-zinc-400">
+                        You have no colleagues to invite yet.
+                      </p>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
-
-          <Card className="bg-zinc-900 border-zinc-800 text-white">
+          <Card className="bg-zinc-900 border-zinc-800">
             <CardHeader>
               <CardTitle>Project Description</CardTitle>
             </CardHeader>
@@ -221,8 +294,7 @@ export default function ProjectDetailsPage() {
               </p>
             </CardContent>
           </Card>
-
-          <Card className="bg-zinc-900 border-zinc-800 text-white">
+          <Card className="bg-zinc-900 border-zinc-800">
             <CardHeader>
               <CardTitle>Tech Stack</CardTitle>
             </CardHeader>
@@ -237,9 +309,8 @@ export default function ProjectDetailsPage() {
               ))}
             </CardContent>
           </Card>
-
           {project.rolesNeeded && project.rolesNeeded.length > 0 && (
-            <Card className="bg-zinc-900 border-zinc-800 text-white">
+            <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
                 <CardTitle>Roles Needed</CardTitle>
               </CardHeader>
@@ -260,20 +331,16 @@ export default function ProjectDetailsPage() {
 
         {/* Right Column */}
         <div className="lg:col-span-1 space-y-6">
-          {/* Join Button */}
           <Card className="bg-zinc-900 border-zinc-800">
             <CardContent className="pt-6">{renderJoinButton()}</CardContent>
           </Card>
-
-          {/* Join Requests (Only for Owner) */}
           {isOwner &&
             project.joinRequests &&
             project.joinRequests.length > 0 && (
-              <Card className="bg-zinc-900 border-purple-500/50 ">
+              <Card className="bg-zinc-900 border-purple-500/50">
                 <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    {/* We are force-testing with a red background */}
-                    <span className="bg-red-500">Join Requests</span>
+                  <CardTitle className="flex items-center justify-between text-white">
+                    <span>Join Requests</span>
                     <Badge className="bg-purple-600">
                       {project.joinRequests.length}
                     </Badge>
@@ -325,10 +392,8 @@ export default function ProjectDetailsPage() {
                 </CardContent>
               </Card>
             )}
-
-          {/* Project Links */}
           {(project.githubRepo || project.liveUrl) && (
-            <Card className="bg-zinc-900 border-zinc-800 text-white">
+            <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
                 <CardTitle>Project Links</CardTitle>
               </CardHeader>
@@ -356,9 +421,7 @@ export default function ProjectDetailsPage() {
               </CardContent>
             </Card>
           )}
-
-          {/* Team Members */}
-          <Card className="bg-zinc-900 border-zinc-800 text-white">
+          <Card className="bg-zinc-900 border-zinc-800">
             <CardHeader>
               <CardTitle>Team Members ({project.members.length})</CardTitle>
             </CardHeader>

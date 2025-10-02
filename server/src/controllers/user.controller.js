@@ -108,3 +108,69 @@ export const getUserById = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const getMyColleagues = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate(
+      "colleagues",
+      "name occupation avatarUrl"
+    ); // Get details for each colleague
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    res.status(200).json(user.colleagues);
+  } catch (error) {
+    console.error("ERROR in getMyColleagues:", error);
+    res
+      .status(500)
+      .json({ message: "Server error while fetching colleagues." });
+  }
+};
+
+export const getMyProjectInvites = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate({
+      path: "projectInvites",
+      populate: { path: "createdBy", select: "name avatarUrl" }, // Also populate the creator of the project
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    res.status(200).json(user.projectInvites);
+  } catch (error) {
+    console.error("ERROR in getMyProjectInvites:", error);
+    res
+      .status(500)
+      .json({ message: "Server error while fetching project invites." });
+  }
+};
+
+export const getMyNotifications = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id)
+      .populate({
+        path: "receivedCollabRequests",
+        select: "name occupation avatarUrl skills",
+      })
+      .populate({
+        path: "projectInvites",
+        populate: { path: "createdBy", select: "name avatarUrl" },
+      });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    res.status(200).json({
+      colleagueRequests: user.receivedCollabRequests,
+      projectInvites: user.projectInvites,
+    });
+  } catch (error) {
+    console.error("ERROR in getMyNotifications:", error);
+    res
+      .status(500)
+      .json({ message: "Server error while fetching notifications." });
+  }
+};

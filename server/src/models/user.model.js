@@ -49,7 +49,15 @@ const userSchema = new mongoose.Schema(
         default: [],
       },
     ],
+    projectInvites: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Project", // This refers to the Project model
+        default: [],
+      },
+    ],
   },
+
   { timestamps: true }
 );
 

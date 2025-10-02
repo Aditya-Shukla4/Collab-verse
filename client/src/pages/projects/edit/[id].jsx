@@ -32,16 +32,17 @@ export default function EditProjectPage() {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // --- NEW: Fetch existing project data to pre-fill the form ---
+  // --- Step 1: Fetch existing project data ---
   useEffect(() => {
     if (!id || !isAuthenticated) return;
 
     const fetchProjectData = async () => {
+      setIsLoading(true);
       try {
         const response = await api.get(`/projects/${id}`);
         const project = response.data;
 
-        // Pre-fill the form with existing data
+        // --- Step 2: Pre-fill the form ---
         setFormData({
           title: project.title,
           description: project.description,
@@ -52,7 +53,7 @@ export default function EditProjectPage() {
         });
       } catch (err) {
         console.error("Failed to fetch project for editing:", err);
-        setError("Could not load project data.");
+        setError("Could not load project data. You may not be the owner.");
       } finally {
         setIsLoading(false);
       }
@@ -65,7 +66,7 @@ export default function EditProjectPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // --- MODIFIED: handleSubmit now sends a PUT request ---
+  // --- Step 3: Send an update (PUT) request ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -85,7 +86,7 @@ export default function EditProjectPage() {
 
     try {
       await api.put(`/projects/${id}`, projectData);
-      // Redirect back to the project details page
+      // Redirect back to the project details page on success
       router.push(`/projects/${id}`);
     } catch (err) {
       console.error("Failed to update project:", err);
@@ -102,9 +103,12 @@ export default function EditProjectPage() {
       <div className="text-center text-white py-20">Loading Editor...</div>
     );
   }
+  if (error) {
+    return <div className="text-center text-red-500 py-20">{error}</div>;
+  }
 
   return (
-    <main className="container mx-auto p-4 md:p-8">
+    <main>
       <Card className="max-w-3xl mx-auto bg-zinc-900 border-zinc-800 text-white">
         <CardHeader>
           <CardTitle className="text-3xl font-bold">Edit Project</CardTitle>
@@ -114,8 +118,6 @@ export default function EditProjectPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* The form structure is the same as create-project */}
-            {/* Title, Description, Tech Stack, etc. */}
             <div className="space-y-2">
               <Label htmlFor="title">Project Title</Label>
               <Input

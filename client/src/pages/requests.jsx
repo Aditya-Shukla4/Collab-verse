@@ -1,37 +1,29 @@
+// client/src/pages/requests.jsx
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/axios";
 import { useRouter } from "next/router";
 import Link from "next/link";
-
-// Shadcn UI Components
-import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
-  CardDescription,
   CardHeader,
-  CardFooter,
   CardTitle,
+  CardDescription,
+  CardContent,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Check, X, UserPlus, Inbox } from "lucide-react";
+import { Check, X, Inbox } from "lucide-react";
 
 export default function RequestsPage() {
   const router = useRouter();
-  const {
-    user,
-    isAuthenticated,
-    loading: authLoading,
-    refetchUser,
-  } = useAuth();
+  const { isAuthenticated, loading: authLoading, refetchUser } = useAuth();
 
-  const [requests, setRequests] = useState([]);
+  const [colleagueRequests, setColleagueRequests] = useState([]);
+  const [projectInvites, setProjectInvites] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
 
-  // Effect to fetch collaboration requests
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
@@ -39,50 +31,66 @@ export default function RequestsPage() {
       return;
     }
 
-    const fetchRequests = async () => {
+    const fetchNotifications = async () => {
       setIsLoading(true);
-      setError(null);
       try {
-        const response = await api.get("/collabs/received");
-        setRequests(response.data);
+        const response = await api.get("/users/me/notifications");
+        setColleagueRequests(response.data.colleagueRequests);
+        setProjectInvites(response.data.projectInvites);
       } catch (err) {
-        console.error("Failed to fetch requests:", err);
-        setError("Could not load collaboration requests.");
+        console.error("Failed to fetch notifications:", err);
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchRequests();
+    fetchNotifications();
   }, [isAuthenticated, authLoading, router]);
 
-  // Handler to accept a request
-  const handleAccept = async (senderId) => {
+  // --- Handlers for Colleague Requests ---
+  const handleAcceptColleague = async (senderId) => {
     try {
       await api.put(`/collabs/accept-request/${senderId}`);
-      // Optimistic UI update: remove the request from the list immediately
-      setRequests((currentRequests) =>
-        currentRequests.filter((req) => req._id !== senderId)
+      setColleagueRequests((current) =>
+        current.filter((req) => req._id !== senderId)
       );
-      await refetchUser(); // Sync user state in the background
+      await refetchUser(); // Sync user state
     } catch (error) {
-      console.error("Failed to accept request:", error);
       alert("Error accepting request.");
     }
   };
 
-  // Handler to reject a request
-  const handleReject = async (senderId) => {
+  const handleRejectColleague = async (senderId) => {
     try {
       await api.delete(`/collabs/reject-request/${senderId}`);
-      // Optimistic UI update: remove the request from the list
-      setRequests((currentRequests) =>
-        currentRequests.filter((req) => req._id !== senderId)
+      setColleagueRequests((current) =>
+        current.filter((req) => req._id !== senderId)
       );
-      await refetchUser(); // Sync user state in the background
+      await refetchUser();
     } catch (error) {
-      console.error("Failed to reject request:", error);
       alert("Error rejecting request.");
+    }
+  };
+
+  // --- Handlers for Project Invites ---
+  const handleAcceptInvite = async (projectId) => {
+    try {
+      await api.put(`/projects/accept-invite/${projectId}`);
+      setProjectInvites((current) =>
+        current.filter((inv) => inv._id !== projectId)
+      );
+    } catch (error) {
+      alert("Failed to accept invite.");
+    }
+  };
+
+  const handleRejectInvite = async (projectId) => {
+    try {
+      await api.delete(`/projects/reject-invite/${projectId}`);
+      setProjectInvites((current) =>
+        current.filter((inv) => inv._id !== projectId)
+      );
+    } catch (error) {
+      alert("Failed to reject invite.");
     }
   };
 
@@ -92,99 +100,124 @@ export default function RequestsPage() {
     );
   }
 
-  if (error) {
-    return <div className="text-center text-red-500 py-20">{error}</div>;
-  }
-
   return (
-    <main className="container mx-auto p-4 md:p-8">
+    <main>
       <div className="space-y-2 mb-8">
         <h1 className="text-4xl font-bold tracking-tighter text-white">
-          Collaboration Requests
+          Your Inbox
         </h1>
         <p className="text-slate-400">
-          Manage your incoming requests from other developers.
+          Manage all your incoming requests and invitations.
         </p>
       </div>
 
-      {requests.length === 0 ? (
+      {colleagueRequests.length === 0 && projectInvites.length === 0 ? (
         <div className="text-center py-20 bg-black/20 rounded-lg">
           <Inbox className="mx-auto h-12 w-12 text-slate-500" />
           <h3 className="mt-4 text-lg font-medium text-white">
             Your inbox is empty
           </h3>
-          <p className="mt-1 text-sm text-slate-400">
-            You have no pending collaboration requests.
-          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {requests.map((sender) => (
-            <Card
-              key={sender._id}
-              className="bg-zinc-900 border border-zinc-800 text-white flex flex-col hover:border-zinc-700 transition-colors"
-            >
-              <CardHeader>
-                <div className="flex items-center gap-4">
-                  <Link href={`/profile/${sender._id}`}>
-                    <Avatar className="h-12 w-12 border-2 border-zinc-700">
-                      <AvatarImage src={sender.avatarUrl} alt={sender.name} />
-                      <AvatarFallback className="bg-zinc-800 text-zinc-300">
-                        {sender.name
-                          ? sender.name.substring(0, 2).toUpperCase()
-                          : "DV"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Link>
-                  <div className="flex-1">
-                    <Link href={`/profile/${sender._id}`}>
-                      <CardTitle className="text-lg font-semibold hover:underline">
-                        {sender.name}
-                      </CardTitle>
-                    </Link>
-                    <CardDescription className="text-zinc-400 text-sm">
-                      {sender.occupation || "Developer"}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow space-y-4">
-                <h3 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold">
-                  Tech Stack
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {sender.skills?.slice(0, 4).map((skill) => (
-                    <Badge
-                      key={skill}
-                      variant="secondary"
-                      className="bg-zinc-800 border border-zinc-700 text-zinc-300 font-normal"
-                    >
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-              {/* --- HERE'S THE IMPROVED PART --- */}
-              <CardFooter className="flex flex-col gap-4 pt-4 border-t border-zinc-800">
-                {/* PRIMARY BUTTON - SOLID */}
-                <Button
-                  onClick={() => handleAccept(sender._id)}
-                  className="w-full bg-green-600 hover:bg-green-700 font-semibold text-white"
-                >
-                  <Check className="mr-2 h-4 w-4" /> Accept
-                </Button>
+        <div className="space-y-12">
+          {projectInvites.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight text-white mb-6">
+                Project Invitations
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {projectInvites.map((invite) => (
+                  <Card
+                    key={invite._id}
+                    className="bg-zinc-900 border-purple-500/50"
+                  >
+                    <CardHeader>
+                      <CardTitle>{invite.title}</CardTitle>
+                      <CardDescription>
+                        Invitation from {invite.createdBy.name}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex gap-4">
+                      <Button
+                        onClick={() => handleAcceptInvite(invite._id)}
+                        className="w-full bg-green-600 hover:bg-green-700"
+                      >
+                        <Check className="mr-2 h-4 w-4" /> Accept
+                      </Button>
+                      <Button
+                        onClick={() => handleRejectInvite(invite._id)}
+                        variant="destructive"
+                        className="w-full"
+                      >
+                        <X className="mr-2 h-4 w-4" /> Reject
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
 
-                {/* SECONDARY BUTTON - OUTLINE. YAHI FIX HAI. */}
-                <Button
-                  onClick={() => handleReject(sender._id)}
-                  variant="outline"
-                  className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
-                >
-                  <X className="mr-2 h-4 w-4" /> Reject
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+          {colleagueRequests.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight text-white mb-6">
+                Colleague Requests
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {colleagueRequests.map((sender) => (
+                  <Card
+                    key={sender._id}
+                    className="bg-zinc-900 border-zinc-800 text-white flex flex-col"
+                  >
+                    <CardHeader className="flex-row items-center gap-4">
+                      <Link href={`/profile/${sender._id}`}>
+                        <Avatar className="h-12 w-12 border-2 border-zinc-700">
+                          <AvatarImage
+                            src={sender.avatarUrl}
+                            alt={sender.name}
+                          />
+                          <AvatarFallback className="bg-zinc-800 text-zinc-300">
+                            {sender.name
+                              ? sender.name.substring(0, 2).toUpperCase()
+                              : "DV"}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Link>
+                      <div className="flex-1">
+                        <Link href={`/profile/${sender._id}`}>
+                          <CardTitle className="text-lg font-semibold hover:underline">
+                            {sender.name}
+                          </CardTitle>
+                        </Link>
+                        <CardDescription className="text-zinc-400 text-sm">
+                          {sender.occupation || "Developer"}
+                        </CardDescription>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-grow flex flex-col justify-end">
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          onClick={() => handleAcceptColleague(sender._id)}
+                          size="sm"
+                          className="w-full bg-green-600 hover:bg-green-700"
+                        >
+                          <Check size={16} />
+                        </Button>
+                        <Button
+                          onClick={() => handleRejectColleague(sender._id)}
+                          size="sm"
+                          variant="destructive"
+                          className="w-full"
+                        >
+                          <X size={16} />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </main>

@@ -7,6 +7,9 @@ import {
   updateUserProfile,
   getUserById,
   searchUsers,
+  getMyColleagues,
+  getMyProjectInvites,
+  getMyNotifications,
 } from "../controllers/user.controller.js";
 
 import { protect } from "../middleware/auth.middleware.js";
@@ -26,5 +29,9 @@ router.put("/profile", protect, updateUserProfile);
 // Rule #4: NOW, handle the dynamic route for any other user's profile LAST.
 // This will only run if the path is not "/me".
 router.get("/:id", protect, getUserById);
+
+router.route("/me/colleagues").get(protect, getMyColleagues);
+
+router.route("/me/notifications").get(protect, getMyNotifications);
 
 export default router;
