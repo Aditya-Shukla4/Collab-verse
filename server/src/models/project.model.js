@@ -48,6 +48,10 @@ const projectSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    joinRequests: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      default: [],
+    },
     status: {
       type: String,
       enum: ["active", "completed", "on-hold"],

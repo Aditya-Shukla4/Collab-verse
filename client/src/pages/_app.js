@@ -3,14 +3,13 @@
 import "@/styles/globals.css";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { PlusCircle } from "lucide-react";
+import Layout from "@/components/layout/Layout"; // <-- Import the new Layout component
 
-function AppHeader() {
-  const { isAuthenticated, user, logout } = useAuth();
-
+// This header is now only for public pages (Login, Signup, etc.)
+function PublicHeader() {
   return (
     <header className="sticky top-0 z-50 w-full p-4 border-b border-white/10 bg-black/50 backdrop-blur-lg">
       <div className="container mx-auto flex items-center justify-between">
@@ -26,87 +25,27 @@ function AppHeader() {
             Collab Verse
           </span>
         </Link>
-
         <nav>
           <ul className="flex items-center gap-4">
-            {isAuthenticated ? (
-              <>
-                <li>
-                  <Link
-                    href="/dashboard"
-                    className="text-sm font-medium text-slate-300 hover:text-white"
-                  >
-                    Dashboard
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/requests"
-                    className="flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-white"
-                  >
-                    Requests
-                    {user?.receivedCollabRequests?.length > 0 && (
-                      <Badge className="bg-purple-600 text-white px-2 py-0.5 text-xs">
-                        {user.receivedCollabRequests.length}
-                      </Badge>
-                    )}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href={`/profile/${user?._id}`}
-                    className="text-sm font-medium text-slate-300 hover:text-white"
-                  >
-                    My Profile
-                  </Link>
-                </li>
-                {/* --- NEW BUTTON ADDED HERE --- */}
-                <li>
-                  <Button
-                    asChild
-                    size="sm"
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
-                  >
-                    <Link href="/create-project">
-                      <PlusCircle className="mr-2 h-4 w-4" /> Create Project
-                    </Link>
-                  </Button>
-                </li>
-                <li>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={logout}
-                    className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-                  >
-                    Logout
-                  </Button>
-                </li>
-              </>
-            ) : (
-              // --- LOGGED-OUT USER VIEW ---
-              <>
-                <li>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-                  >
-                    <Link href="/LoginPage">Login</Link>
-                  </Button>
-                </li>
-                <li>
-                  <Button
-                    asChild
-                    size="sm"
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
-                  >
-                    <Link href="/SignupPage">Sign Up</Link>
-                  </Button>
-                </li>
-              </>
-            )}
+            <li>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+              >
+                <Link href="/LoginPage">Login</Link>
+              </Button>
+            </li>
+            <li>
+              <Button
+                asChild
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                <Link href="/SignupPage">Sign Up</Link>
+              </Button>
+            </li>
           </ul>
         </nav>
       </div>
@@ -115,10 +54,21 @@ function AppHeader() {
 }
 
 export default function App({ Component, pageProps }) {
+  const router = useRouter();
+  const noLayoutPages = ["/LoginPage", "/SignupPage", "/"]; // Pages that should NOT have the sidebar
+
   return (
     <AuthProvider>
-      <AppHeader />
-      <Component {...pageProps} />
+      {noLayoutPages.includes(router.pathname) ? (
+        <>
+          <PublicHeader />
+          <Component {...pageProps} />
+        </>
+      ) : (
+        <Layout>
+          <Component {...pageProps} />
+        </Layout>
+      )}
     </AuthProvider>
   );
 }
