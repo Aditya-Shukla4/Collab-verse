@@ -6,22 +6,20 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/api/axios";
 import ProjectCard from "@/components/projects/ProjectCard";
 
+// Shadcn UI Imports
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-// ProjectCard with safe property access
-
-// UserCard Component
+// UserCard Component (kept in this file as per your code)
 const UserCard = ({ dev }) => (
   <Card className="bg-zinc-900 border border-zinc-800 text-white flex flex-col h-full p-6">
     <div className="flex items-center gap-4 mb-4">
@@ -47,7 +45,7 @@ const UserCard = ({ dev }) => (
           <Badge
             key={skill}
             variant="secondary"
-            className="bg-zinc-800 border border-zinc-700 text-zinc-300 font-normal"
+            className="bg-zinc-800 border-zinc-700 text-zinc-300 font-normal"
           >
             {skill}
           </Badge>
@@ -79,13 +77,19 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [universalQuery, setUniversalQuery] = useState("");
 
-  // Auth check
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
       router.push("/LoginPage");
     }
   }, [isAuthenticated, authLoading, router]);
+
+  // Handler for when a project is deleted from a ProjectCard
+  const handleProjectDeleted = (deletedProjectId) => {
+    setProjects((currentProjects) =>
+      currentProjects.filter((p) => p._id !== deletedProjectId)
+    );
+  };
 
   // Fetch data
   useEffect(() => {
@@ -94,26 +98,19 @@ export default function DashboardPage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        let url = "/users";
-        const trimmedQuery = universalQuery?.trim() || "";
-
-        if (trimmedQuery.length > 0) {
-          url += `?query=${encodeURIComponent(trimmedQuery)}`;
-        }
-
         const [usersResponse, projectsResponse] = await Promise.all([
-          api.get(url),
+          api.get(
+            `/users?query=${encodeURIComponent(universalQuery?.trim() || "")}`
+          ),
           api.get("/projects"),
         ]);
 
-        // Filter out current user
         const currentUserId = user?._id;
         if (currentUserId) {
           setUsers(usersResponse.data.filter((u) => u._id !== currentUserId));
         } else {
           setUsers(usersResponse.data);
         }
-
         setProjects(projectsResponse.data);
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
@@ -129,12 +126,14 @@ export default function DashboardPage() {
     return () => clearTimeout(debounceTimer);
   }, [universalQuery, isAuthenticated, authLoading, user]);
 
-  if (authLoading || !isAuthenticated) {
-    return <div className="text-center py-10 text-white">Loading...</div>;
+  if (authLoading || !isAuthenticated || isLoading) {
+    return (
+      <div className="text-center py-10 text-white">Loading Dashboard...</div>
+    );
   }
 
   return (
-    <main className="container mx-auto p-4 md:p-8">
+    <main>
       <div className="space-y-2 mb-8">
         <h1 className="text-4xl font-bold tracking-tighter text-white">
           Welcome back, {user?.name || "Developer"}!
@@ -144,14 +143,11 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Latest Projects Section */}
       <div className="mb-12">
         <h2 className="text-2xl font-bold tracking-tight text-white mb-6">
           Latest Projects
         </h2>
-        {isLoading ? (
-          <div className="text-center text-white">Loading projects...</div>
-        ) : projects.length > 0 ? (
+        {projects.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
             {projects.map((project) => (
               <ProjectCard key={project._id} project={project} />
@@ -164,7 +160,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Developer Search Section */}
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-white mb-6">
           Find Developers
@@ -173,25 +168,21 @@ export default function DashboardPage() {
           <Input
             type="text"
             placeholder="Search by name, tech stack, or location..."
-            className="w-full p-6 text-lg bg-zinc-900 border border-zinc-800 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            className="w-full p-6 text-lg bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
             value={universalQuery}
             onChange={(e) => setUniversalQuery(e.target.value)}
           />
         </div>
-        {isLoading ? (
-          <div className="text-center text-white">
-            Searching for developers...
+        {users.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+            {users.map((dev) => (
+              <UserCard key={dev._id} dev={dev} />
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-            {users.length > 0 ? (
-              users.map((dev) => <UserCard key={dev._id} dev={dev} />)
-            ) : (
-              <p className="col-span-full text-center text-slate-400">
-                No developers found matching your criteria.
-              </p>
-            )}
-          </div>
+          <p className="col-span-full text-center text-slate-400">
+            No developers found matching your criteria.
+          </p>
         )}
       </div>
     </main>

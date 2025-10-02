@@ -5,11 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/api/axios";
 import { useRouter } from "next/router";
 import Link from "next/link";
-
-// Our new reusable component
 import ProjectCard from "@/components/projects/ProjectCard";
-
-// Shadcn UI
 import { Button } from "@/components/ui/button";
 import { FolderKanban, PlusCircle } from "lucide-react";
 
@@ -41,9 +37,17 @@ export default function MyProjectsPage() {
         setIsLoading(false);
       }
     };
-
     fetchMyProjects();
   }, [isAuthenticated, authLoading, router]);
+
+  // --- NEW FUNCTION ADDED HERE ---
+  // This function will be called by the child card when a project is deleted
+  const handleProjectDeleted = (deletedProjectId) => {
+    // Filter the projects state to remove the deleted project from the UI
+    setProjects((currentProjects) =>
+      currentProjects.filter((p) => p._id !== deletedProjectId)
+    );
+  };
 
   if (isLoading || authLoading) {
     return (
@@ -52,7 +56,6 @@ export default function MyProjectsPage() {
       </div>
     );
   }
-
   if (error) {
     return <div className="text-center text-red-500 py-20">{error}</div>;
   }
@@ -70,8 +73,7 @@ export default function MyProjectsPage() {
         </div>
         <Button asChild className="bg-purple-600 hover:bg-purple-700">
           <Link href="/create-project">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create New Project
+            <PlusCircle className="mr-2 h-4 w-4" /> Create New Project
           </Link>
         </Button>
       </div>
@@ -89,7 +91,12 @@ export default function MyProjectsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
-            <ProjectCard key={project._id} project={project} isOwner={true} />
+            <ProjectCard
+              key={project._id}
+              project={project}
+              isOwner={true}
+              onProjectDeleted={handleProjectDeleted}
+            />
           ))}
         </div>
       )}

@@ -189,3 +189,60 @@ export const getMyProjects = async (req, res) => {
       .json({ message: "Server error while fetching user's projects." });
   }
 };
+
+export const deleteProject = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const userId = req.user.id;
+
+    const project = await Project.findById(projectId);
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found." });
+    }
+
+    // --- CRITICAL SECURITY CHECK ---
+    // Make sure only the user who created the project can delete it.
+    if (!project.createdBy.equals(userId)) {
+      return res.status(403).json({
+        message: "Not authorized. You can only delete your own projects.",
+      });
+    }
+
+    await Project.findByIdAndDelete(projectId);
+
+    res.status(200).json({ message: "Project deleted successfully." });
+  } catch (error) {
+    console.error("❌ ERROR in deleteProject:", error);
+    res.status(500).json({ message: "Server error while deleting project." });
+  }
+};
+
+export const updateProject = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const userId = req.user.id;
+    const updateData = req.body;
+
+    // Find the project and update it in one step.
+    // The query { _id: projectId, createdBy: userId } ensures that a user can only update a project they created.
+    const updatedProject = await Project.findOneAndUpdate(
+      { _id: projectId, createdBy: userId },
+      updateData,
+      { new: true, runValidators: true } // Return the updated document and run schema validators
+    );
+
+    if (!updatedProject) {
+      return res
+        .status(404)
+        .json({
+          message: "Project not found or you are not authorized to edit it.",
+        });
+    }
+
+    res.status(200).json(updatedProject);
+  } catch (error) {
+    console.error("❌ ERROR in updateProject:", error);
+    res.status(500).json({ message: "Server error while updating project." });
+  }
+};

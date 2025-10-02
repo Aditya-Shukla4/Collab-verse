@@ -57,6 +57,9 @@ export default function ProjectDetailsPage() {
       return;
     }
 
+    console.log("LOGGED IN USER:", loggedInUser);
+    console.log("PROJECT DATA:", project);
+
     if (project.createdBy._id === loggedInUser._id) {
       setJoinStatus("owner");
     } else if (
@@ -119,8 +122,10 @@ export default function ProjectDetailsPage() {
     switch (joinStatus) {
       case "owner":
         return (
-          <Button className="w-full bg-zinc-700 hover:bg-zinc-600">
-            <Edit className="mr-2 h-4 w-4" /> Edit Project
+          <Button asChild className="w-full bg-zinc-700 hover:bg-zinc-600">
+            <Link href={`/projects/edit/${project._id}`}>
+              <Edit className="mr-2 h-4 w-4" /> Edit Project
+            </Link>
           </Button>
         );
       case "member":
@@ -267,7 +272,8 @@ export default function ProjectDetailsPage() {
               <Card className="bg-zinc-900 border-purple-500/50 ">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
-                    <span>Join Requests</span>
+                    {/* We are force-testing with a red background */}
+                    <span className="bg-red-500">Join Requests</span>
                     <Badge className="bg-purple-600">
                       {project.joinRequests.length}
                     </Badge>

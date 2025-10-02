@@ -10,27 +10,32 @@ import {
   acceptJoinRequest,
   rejectJoinRequest,
   getMyProjects,
+  deleteProject,
+  updateProject,
 } from "../controllers/project.controller.js";
 
 const router = express.Router();
 
-// Routes for creating and getting all projects
+// --- CORRECT ROUTE ORDER ---
+
+// 1. Put the most specific text-based routes first.
 router.route("/my-projects").get(protect, getMyProjects);
 
+// 2. Then, handle the general root routes.
 router.route("/").post(protect, createProject).get(getProjects);
 
-// Route for getting a single project
-router.route("/:id").get(getProjectById);
+// 3. Put dynamic routes with one parameter after.
+router
+  .route("/:id")
+  .get(getProjectById)
+  .delete(protect, deleteProject)
+  .put(protect, updateProject);
 
-// --- New Join Request Routes ---
-
-// Route for a user to request to join a project
+// 4. Put the most complex dynamic routes last.
 router.route("/:id/request-join").post(protect, requestToJoinProject);
 
-// Route for a project owner to accept a user's request
 router.route("/:id/accept-join/:userId").put(protect, acceptJoinRequest);
 
-// Route for a project owner to reject a user's request
 router.route("/:id/reject-join/:userId").delete(protect, rejectJoinRequest);
 
 export default router;
