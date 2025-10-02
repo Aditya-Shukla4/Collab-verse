@@ -166,3 +166,26 @@ export const rejectJoinRequest = async (req, res) => {
     res.status(500).json({ message: "Server error while rejecting request." });
   }
 };
+
+export const getMyProjects = async (req, res) => {
+  try {
+    // This is the main logic: Find projects where 'createdBy' matches the logged-in user's ID
+    const projects = await Project.find({ createdBy: req.user.id })
+      .populate("members", "name avatarUrl")
+      .populate("joinRequests", "name avatarUrl")
+      .sort({ createdAt: -1 });
+
+    if (!projects) {
+      return res
+        .status(404)
+        .json({ message: "No projects found for this user." });
+    }
+
+    res.status(200).json(projects);
+  } catch (error) {
+    console.error("❌ ERROR in getMyProjects:", error);
+    res
+      .status(500)
+      .json({ message: "Server error while fetching user's projects." });
+  }
+};

@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/axios";
+import ProjectCard from "@/components/projects/ProjectCard";
 
 import {
   Card,
@@ -19,44 +20,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 // ProjectCard with safe property access
-const ProjectCard = ({ project }) => (
-  <Card className="bg-zinc-900 border border-zinc-800 text-white flex flex-col h-full p-6">
-    <CardHeader className="p-0 mb-4">
-      <CardTitle className="text-lg font-semibold hover:underline">
-        <Link href={`/projects/${project._id}`}>{project.title}</Link>
-      </CardTitle>
-      <CardDescription className="text-zinc-400 text-sm pt-1">
-        Posted by {project.createdBy?.name || "Unknown"}
-      </CardDescription>
-    </CardHeader>
-    <CardContent className="p-0 flex-grow mb-4">
-      <p className="text-zinc-400 text-sm line-clamp-2 mb-4">
-        {project.description}
-      </p>
-      <h3 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold mb-2">
-        Tech Stack
-      </h3>
-      <div className="flex flex-wrap gap-2">
-        {project.techStack?.slice(0, 4).map((tech, index) => (
-          <Badge
-            key={`${tech}-${index}`}
-            variant="secondary"
-            className="bg-zinc-800 border-zinc-700 text-zinc-300 font-normal"
-          >
-            {tech}
-          </Badge>
-        ))}
-      </div>
-    </CardContent>
-    <CardFooter className="p-0">
-      <Link href={`/projects/${project._id}`} passHref className="w-full">
-        <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold">
-          View Project
-        </Button>
-      </Link>
-    </CardFooter>
-  </Card>
-);
 
 // UserCard Component
 const UserCard = ({ dev }) => (

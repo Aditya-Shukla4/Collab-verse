@@ -9,11 +9,14 @@ import {
   requestToJoinProject,
   acceptJoinRequest,
   rejectJoinRequest,
+  getMyProjects,
 } from "../controllers/project.controller.js";
 
 const router = express.Router();
 
 // Routes for creating and getting all projects
+router.route("/my-projects").get(protect, getMyProjects);
+
 router.route("/").post(protect, createProject).get(getProjects);
 
 // Route for getting a single project

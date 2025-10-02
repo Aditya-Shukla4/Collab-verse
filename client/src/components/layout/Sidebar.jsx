@@ -1,3 +1,5 @@
+// client/src/components/layout/Sidebar.jsx
+
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/router";
@@ -18,6 +20,8 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
   const router = useRouter();
   const pathname = router.pathname;
 
+  if (!user) return null;
+
   const navLinks = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/my-projects", label: "My Projects", icon: FolderKanban },
@@ -25,30 +29,28 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
       href: "/requests",
       label: "Requests",
       icon: Inbox,
-      count: user?.receivedCollabRequests?.length || 0,
+      count: user.receivedCollabRequests?.length || 0,
     },
-    { href: `/profile/${user?._id}`, label: "My Profile", icon: User },
+    { href: `/profile/${user._id}`, label: "My Profile", icon: User },
   ];
-
-  if (!user) return null;
 
   return (
     <>
-      {/* Overlay */}
+      {/* --- THIS IS THE CHANGE --- */}
+      {/* The 'lg:hidden' class has been REMOVED from the overlay */}
       <div
         onClick={toggleSidebar}
-        className={`fixed inset-0 bg-black/60 z-30 transition-opacity duration-300 lg:hidden ${
+        className={`fixed inset-0 bg-black/60 z-30 transition-opacity duration-300 ${
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
       />
 
-      {/* Sidebar */}
+      {/* The Sidebar itself */}
       <aside
         className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-zinc-800 bg-zinc-950/95 backdrop-blur-lg text-white flex flex-col transition-transform duration-300 ease-in-out ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
           <Link href="/dashboard" className="flex items-center gap-3">
             <Image
@@ -62,22 +64,19 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
           </Link>
           <button
             onClick={toggleSidebar}
-            className="text-zinc-400 hover:text-white transition-colors"
+            className="text-zinc-400 hover:text-white"
           >
             <CloseIcon size={20} />
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-grow p-4 overflow-y-auto">
           <ul className="space-y-2">
             {navLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  onClick={() => {
-                    if (window.innerWidth < 1024) toggleSidebar();
-                  }}
+                  onClick={toggleSidebar}
                   className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-800 ${
                     pathname === link.href
                       ? "bg-zinc-800 text-white"
@@ -97,7 +96,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
           </ul>
         </nav>
 
-        {/* User Profile */}
         <div className="p-4 border-t border-zinc-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 flex-1 min-w-0">
