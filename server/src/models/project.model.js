@@ -48,6 +48,10 @@ const projectSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    codeContent: {
+      type: String,
+      default: "// Welcome to the workspace! Start coding...",
+    },
     joinRequests: {
       type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
       default: [],

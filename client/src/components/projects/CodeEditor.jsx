@@ -1,38 +1,51 @@
 // client/src/components/projects/CodeEditor.jsx
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import { useSocket } from "@/context/SocketContext";
 
-// Component now accepts projectId
 export default function CodeEditor({ value, onChange, projectId }) {
   const socket = useSocket();
+  const editorRef = useRef(null);
 
-  function handleEditorChange(value, event) {
-    // 1. Update the local state
-    onChange(value);
-    // 2. Send the new code to the server
-    if (socket) {
-      socket.emit("code_change", { projectId, newCode: value });
-    }
-  }
+  // This effect handles the DEBOUNCING logic for saving code
+  useEffect(() => {
+    if (!socket) return;
 
-  // Effect for listening to incoming code changes
+    // Set a timer to save the code after 1.5 seconds of inactivity
+    const timer = setTimeout(() => {
+      socket.emit("save_code", { projectId, newCode: value });
+    }, 1500);
+
+    // If the user types again, clear the timer and start a new one
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, socket, projectId]); // This effect re-runs every time the 'value' changes
+
+  // This effect handles receiving real-time code changes from other users
   useEffect(() => {
     if (!socket) return;
 
     const handleCodeReceive = (receivedCode) => {
-      // Update the editor's content with the code from another user
       onChange(receivedCode);
     };
 
     socket.on("receive_code_change", handleCodeReceive);
 
-    // Clean up the listener when the component unmounts
     return () => {
       socket.off("receive_code_change", handleCodeReceive);
     };
   }, [socket, onChange]);
+
+  function handleEditorChange(value, event) {
+    // Only emit the change to other users, don't save from here.
+    // The saving is handled by the debouncing effect above.
+    onChange(value);
+    if (socket) {
+      socket.emit("code_change", { projectId, newCode: value });
+    }
+  }
 
   return (
     <Editor
@@ -41,11 +54,7 @@ export default function CodeEditor({ value, onChange, projectId }) {
       theme="vs-dark"
       value={value}
       onChange={handleEditorChange}
-      options={{
-        fontSize: 14,
-        minimap: { enabled: false },
-        contextmenu: false,
-      }}
+      options={{ fontSize: 14, minimap: { enabled: false } }}
     />
   );
 }

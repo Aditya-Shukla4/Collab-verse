@@ -12,6 +12,7 @@ import userRoutes from "./src/routes/user.routes.js";
 import projectRoutes from "./src/routes/project.routes.js";
 import collabRoutes from "./src/routes/collab.routes.js";
 import authRoutes from "./src/routes/auth.routes.js";
+import Project from "./src/models/project.model.js";
 import "./src/config/passport.js";
 
 const app = express();
@@ -55,6 +56,14 @@ io.on("connection", (socket) => {
     socket.to(data.projectId).emit("receive_code_change", data.newCode);
   });
 
+  socket.on("save_code", async ({ projectId, newCode }) => {
+    try {
+      await Project.findByIdAndUpdate(projectId, { codeContent: newCode });
+      console.log(`✅ Code saved for project: ${projectId}`);
+    } catch (error) {
+      console.error("Error saving code:", error);
+    }
+  });
   socket.on("disconnect", () => {
     console.log(`🔌 Client disconnected: ${socket.id}`);
   });

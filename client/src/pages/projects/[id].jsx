@@ -63,12 +63,10 @@ export default function ProjectDetailsPage() {
       setError("Could not load the project.");
     }
   };
-
   useEffect(() => {
     setIsLoading(true);
     fetchProject().finally(() => setIsLoading(false));
   }, [id]);
-
   useEffect(() => {
     if (!project || !loggedInUser) {
       setJoinStatus("not_logged_in");
@@ -88,7 +86,6 @@ export default function ProjectDetailsPage() {
       setJoinStatus("can_request");
     }
   }, [project, loggedInUser]);
-
   useEffect(() => {
     if (isInviteModalOpen) {
       const fetchColleagues = async () => {
@@ -102,6 +99,11 @@ export default function ProjectDetailsPage() {
       fetchColleagues();
     }
   }, [isInviteModalOpen]);
+  useEffect(() => {
+    if (project?.codeContent) {
+      setCode(project.codeContent);
+    }
+  }, [project]);
 
   const handleRequestToJoin = async () => {
     setIsSubmitting(true);
@@ -114,7 +116,6 @@ export default function ProjectDetailsPage() {
       setIsSubmitting(false);
     }
   };
-
   const handleAcceptRequest = async (applicantId) => {
     try {
       await api.put(`/projects/${id}/accept-join/${applicantId}`);
@@ -123,7 +124,6 @@ export default function ProjectDetailsPage() {
       alert(err.response?.data?.message || "Failed to accept request.");
     }
   };
-
   const handleRejectRequest = async (applicantId) => {
     try {
       await api.delete(`/projects/${id}/reject-join/${applicantId}`);
@@ -132,7 +132,6 @@ export default function ProjectDetailsPage() {
       alert(err.response?.data?.message || "Failed to reject request.");
     }
   };
-
   const handleInvite = async (colleagueId) => {
     setInviteStatus((prev) => ({ ...prev, [colleagueId]: "sending" }));
     try {
@@ -203,7 +202,8 @@ export default function ProjectDetailsPage() {
   );
 
   return (
-    <main>
+    // Start with a Fragment (<>) instead of <main> because Layout.jsx provides it
+    <>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-6">
@@ -276,7 +276,7 @@ export default function ProjectDetailsPage() {
                               ? "Already Member"
                               : inviteStatus[colleague._id] === "sending"
                               ? "Sending..."
-                              : inviteStatus[colleagues._id] === "sent"
+                              : inviteStatus[colleague._id] === "sent"
                               ? "Invited"
                               : "Invite"}
                           </Button>
@@ -335,7 +335,6 @@ export default function ProjectDetailsPage() {
               </CardContent>
             </Card>
           )}
-
           {(isOwner || isMember) && (
             <div className="mt-6">
               <h2 className="text-2xl font-bold tracking-tight text-white mb-4">
@@ -351,7 +350,6 @@ export default function ProjectDetailsPage() {
             </div>
           )}
         </div>
-
         {/* Right Column */}
         <div className="lg:col-span-1 space-y-6">
           <Card className="bg-zinc-900 border-zinc-800">
@@ -471,10 +469,9 @@ export default function ProjectDetailsPage() {
               ))}
             </CardContent>
           </Card>
-
           {isMember && <ProjectChat projectId={project._id} />}
         </div>
       </div>
-    </main>
+    </>
   );
 }
