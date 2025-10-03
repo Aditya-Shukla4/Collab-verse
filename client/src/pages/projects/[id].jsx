@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import api from "@/api/axios";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import ProjectChat from "@/components/projects/ProjectChat";
 import {
   Card,
   CardContent,
@@ -37,7 +38,7 @@ import {
 export default function ProjectDetailsPage() {
   const router = useRouter();
   const { id } = router.query;
-  const { user: loggedInUser, isAuthenticated } = useAuth();
+  const { user: loggedInUser } = useAuth();
 
   const [project, setProject] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -448,6 +449,9 @@ export default function ProjectDetailsPage() {
               ))}
             </CardContent>
           </Card>
+
+          {/* --- CORRECT PLACEMENT FOR CHAT --- */}
+          {isMember && <ProjectChat projectId={project._id} />}
         </div>
       </div>
     </main>

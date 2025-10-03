@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import Layout from "@/components/layout/Layout"; // <-- Import the new Layout component
+import Layout from "@/components/layout/Layout";
+import { SocketProvider } from "@/context/SocketContext";
 
 // This header is now only for public pages (Login, Signup, etc.)
 function PublicHeader() {
@@ -59,16 +60,19 @@ export default function App({ Component, pageProps }) {
 
   return (
     <AuthProvider>
-      {noLayoutPages.includes(router.pathname) ? (
-        <>
-          <PublicHeader />
-          <Component {...pageProps} />
-        </>
-      ) : (
-        <Layout>
-          <Component {...pageProps} />
-        </Layout>
-      )}
+      {/* Wrap the entire app with SocketProvider, inside AuthProvider */}
+      <SocketProvider>
+        {noLayoutPages.includes(router.pathname) ? (
+          <>
+            <PublicHeader />
+            <Component {...pageProps} />
+          </>
+        ) : (
+          <Layout>
+            <Component {...pageProps} />
+          </Layout>
+        )}
+      </SocketProvider>
     </AuthProvider>
   );
 }
