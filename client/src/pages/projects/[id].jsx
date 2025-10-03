@@ -6,6 +6,7 @@ import api from "@/api/axios";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import ProjectChat from "@/components/projects/ProjectChat";
+import CodeEditor from "@/components/projects/CodeEditor";
 import {
   Card,
   CardContent,
@@ -48,6 +49,9 @@ export default function ProjectDetailsPage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [colleagues, setColleagues] = useState([]);
   const [inviteStatus, setInviteStatus] = useState({});
+  const [code, setCode] = useState(
+    "// Welcome to your real-time workspace!\n// Start coding here..."
+  );
 
   const fetchProject = async () => {
     if (!id) return;
@@ -110,6 +114,7 @@ export default function ProjectDetailsPage() {
       setIsSubmitting(false);
     }
   };
+
   const handleAcceptRequest = async (applicantId) => {
     try {
       await api.put(`/projects/${id}/accept-join/${applicantId}`);
@@ -118,6 +123,7 @@ export default function ProjectDetailsPage() {
       alert(err.response?.data?.message || "Failed to accept request.");
     }
   };
+
   const handleRejectRequest = async (applicantId) => {
     try {
       await api.delete(`/projects/${id}/reject-join/${applicantId}`);
@@ -126,6 +132,7 @@ export default function ProjectDetailsPage() {
       alert(err.response?.data?.message || "Failed to reject request.");
     }
   };
+
   const handleInvite = async (colleagueId) => {
     setInviteStatus((prev) => ({ ...prev, [colleagueId]: "sending" }));
     try {
@@ -269,7 +276,7 @@ export default function ProjectDetailsPage() {
                               ? "Already Member"
                               : inviteStatus[colleague._id] === "sending"
                               ? "Sending..."
-                              : inviteStatus[colleague._id] === "sent"
+                              : inviteStatus[colleagues._id] === "sent"
                               ? "Invited"
                               : "Invite"}
                           </Button>
@@ -327,6 +334,21 @@ export default function ProjectDetailsPage() {
                 ))}
               </CardContent>
             </Card>
+          )}
+
+          {(isOwner || isMember) && (
+            <div className="mt-6">
+              <h2 className="text-2xl font-bold tracking-tight text-white mb-4">
+                Live Workspace
+              </h2>
+              <div className="border border-zinc-700 rounded-lg overflow-hidden">
+                <CodeEditor
+                  value={code}
+                  onChange={setCode}
+                  projectId={project._id}
+                />
+              </div>
+            </div>
           )}
         </div>
 
@@ -450,7 +472,6 @@ export default function ProjectDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* --- CORRECT PLACEMENT FOR CHAT --- */}
           {isMember && <ProjectChat projectId={project._id} />}
         </div>
       </div>

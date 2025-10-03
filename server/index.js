@@ -51,6 +51,10 @@ io.on("connection", (socket) => {
     socket.to(data.projectId).emit("receive_message", data);
   });
 
+  socket.on("code_change", (data) => {
+    socket.to(data.projectId).emit("receive_code_change", data.newCode);
+  });
+
   socket.on("disconnect", () => {
     console.log(`🔌 Client disconnected: ${socket.id}`);
   });
