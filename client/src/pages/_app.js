@@ -1,16 +1,33 @@
-// client/src/pages/_app.js
-
 import "@/styles/globals.css";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { useState, useEffect } from "react"; // <-- Import useEffect
+import { AuthProvider } from "@/context/AuthContext";
+import { SocketProvider } from "@/context/SocketContext";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/layout/Layout";
-import { SocketProvider } from "@/context/SocketContext";
+import { Menu, X } from "lucide-react"; // <-- Import menu icons
 
-// This header is now only for public pages (Login, Signup, etc.)
+// This header is for pages like Login/Signup that don't have the main sidebar layout.
 function PublicHeader() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
+
+  // Add this effect to close the mobile menu on route change
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setIsMenuOpen(false);
+    };
+
+    router.events.on("routeChangeComplete", handleRouteChange);
+
+    // Cleanup the event listener on component unmount
+    return () => {
+      router.events.off("routeChangeComplete", handleRouteChange);
+    };
+  }, [router.events]);
+
   return (
     <header className="sticky top-0 z-50 w-full p-4 border-b border-white/10 bg-black/50 backdrop-blur-lg">
       <div className="container mx-auto flex items-center justify-between">
@@ -26,29 +43,66 @@ function PublicHeader() {
             Collab Verse
           </span>
         </Link>
-        <nav>
-          <ul className="flex items-center gap-4">
-            <li>
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-              >
-                <Link href="/LoginPage">Login</Link>
-              </Button>
-            </li>
-            <li>
-              <Button
-                asChild
-                size="sm"
-                className="bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                <Link href="/SignupPage">Sign Up</Link>
-              </Button>
-            </li>
-          </ul>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center gap-4">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+          >
+            <Link href="/LoginPage">Login</Link>
+          </Button>
+          <Button
+            asChild
+            size="sm"
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <Link href="/SignupPage">Sign up</Link>
+          </Button>
         </nav>
+
+        {/* Mobile Menu Button */}
+        <div className="md:hidden">
+          <Button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            variant="ghost"
+            size="icon"
+            className="text-white hover:bg-zinc-800"
+          >
+            {isMenuOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile Menu Dropdown with transition */}
+      <div
+        className={`transition-all duration-300 ease-in-out overflow-hidden md:hidden ${
+          isMenuOpen ? "max-h-48 mt-4" : "max-h-0"
+        }`}
+      >
+        <div className="container mx-auto">
+          <nav className="flex flex-col gap-4">
+            <Button
+              asChild
+              variant="outline"
+              className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+            >
+              <Link href="/LoginPage">Login</Link>
+            </Button>
+            <Button
+              asChild
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              <Link href="/SignupPage">Sign up</Link>
+            </Button>
+          </nav>
+        </div>
       </div>
     </header>
   );
@@ -56,13 +110,25 @@ function PublicHeader() {
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
-  const noLayoutPages = ["/LoginPage", "/SignupPage", "/"]; // Pages that should NOT have the sidebar
+
+  // If the page component has its own `getLayout` function, use it.
+  if (Component.getLayout) {
+    return (
+      <AuthProvider>
+        <SocketProvider>
+          {Component.getLayout(<Component {...pageProps} />)}
+        </SocketProvider>
+      </AuthProvider>
+    );
+  }
+
+  // For all other pages, use the default logic.
+  const publicPages = ["/LoginPage", "/SignupPage"];
 
   return (
     <AuthProvider>
-      {/* Wrap the entire app with SocketProvider, inside AuthProvider */}
       <SocketProvider>
-        {noLayoutPages.includes(router.pathname) ? (
+        {publicPages.includes(router.pathname) ? (
           <>
             <PublicHeader />
             <Component {...pageProps} />
