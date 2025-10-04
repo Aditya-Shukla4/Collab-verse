@@ -149,7 +149,7 @@ export default function RequestsPage() {
                         variant="destructive"
                         className="w-full"
                       >
-                        <X className="mr-2 h-4 w-4" /> Reject
+                        <X className="mr-2 h-4 w-4 flex flex-col" /> Reject
                       </Button>
                     </CardContent>
                   </Card>
