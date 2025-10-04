@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 5000;
 
 // --- CORRECT MIDDLEWARE ORDER ---
 // General purpose middlewares should be registered first.
-app.use(cors({ origin: "http://localhost:3000" }));
+app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:3000" }));
 app.use(express.json()); // <-- Moved up
 app.use(passport.initialize());
 
