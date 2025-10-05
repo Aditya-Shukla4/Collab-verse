@@ -54,7 +54,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
           <Link href="/dashboard" className="flex items-center gap-3">
             <Image
-              src="/logo.png"
+              src="/Logo.png"
               alt="Collab-Verse Logo"
               width={32}
               height={32}
