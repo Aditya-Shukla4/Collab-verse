@@ -45,11 +45,23 @@ export default function LoginPage() {
   };
 
   const handleGitHubLogin = () => {
-    window.location.href = process.env.NEXT_PUBLIC_GITHUB_AUTH_URL;
+    const githubUrl =
+      process.env.NEXT_PUBLIC_GITHUB_AUTH_URL ||
+      `${
+        process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ||
+        "https://collab-verse-server.onrender.com/api"
+      }/auth/github`;
+    window.location.href = githubUrl;
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL;
+    const googleUrl =
+      process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL ||
+      `${
+        process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ||
+        "https://collab-verse-server.onrender.com/api"
+      }/auth/google`;
+    window.location.href = googleUrl;
   };
 
   // YOUR beautiful UI, now powered by the correct logic
