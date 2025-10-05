@@ -4,7 +4,7 @@ import { io } from "socket.io-client";
 
 const URL =
   process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
-  "http://localhost:5000";
+  "https://collab-verse-server.onrender.com";
 const socket = io(URL, {
   autoConnect: false, // We will connect manually
 });

@@ -50,11 +50,11 @@ export default function SignupPage() {
   };
 
   const handleGitHubLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/github";
+    window.location.href = process.env.NEXT_PUBLIC_GITHUB_AUTH_URL;
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/google";
+    window.location.href = process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL;
   };
 
   // YOUR SUPERIOR UI, now powered by the correct logic

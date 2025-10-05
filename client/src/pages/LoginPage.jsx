@@ -45,12 +45,11 @@ export default function LoginPage() {
   };
 
   const handleGitHubLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/github";
+    window.location.href = process.env.NEXT_PUBLIC_GITHUB_AUTH_URL;
   };
 
-  // NOTE: Add a similar function for Google if the backend is ready
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/google";
+    window.location.href = process.env.NEXT_PUBLIC_GOOGLE_AUTH_URL;
   };
 
   // YOUR beautiful UI, now powered by the correct logic

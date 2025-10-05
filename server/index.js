@@ -34,6 +34,16 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/collabs", collabRoutes);
 app.use("/api/auth", authRoutes);
 
+app.use(
+  cors({
+    origin: [
+      "https://collab-verse.vercel.app",
+      "http://localhost:3000"
+    ],
+    credentials: true,
+  })
+);
+
 // --- HTTP and Socket.IO Server Setup ---
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
