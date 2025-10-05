@@ -26,10 +26,10 @@ router.get(
 router.get(
   "/github/callback",
   passport.authenticate("github", {
-    failureRedirect: "http://localhost:3000/LoginPage",
+    failureRedirect: process.env.CLIENT_URL + "/LoginPage",
     session: false,
   }),
-  githubCallback // Use the imported function directly
+  githubCallback
 );
 
 // Google Auth
@@ -44,10 +44,10 @@ router.get(
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "http://localhost:3000/LoginPage",
+    failureRedirect: process.env.CLIENT_URL + "/LoginPage",
     session: false,
   }),
-  githubCallback // --- THIS IS THE FIX --- Use the same function directly
+  githubCallback
 );
 
 router.get("/profile", protect, getMyProfile);
