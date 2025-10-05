@@ -24,7 +24,7 @@ export default function Header({ toggleSidebar, isSidebarOpen }) {
         {!isSidebarOpen && (
           <Link href="/dashboard" className="flex items-center gap-3">
             <Image
-              src="/logo.png"
+              src="/Logo.png"
               alt="Collab-Verse Logo"
               width={32}
               height={32}

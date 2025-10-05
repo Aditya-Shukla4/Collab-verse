@@ -24,7 +24,7 @@ export default function PublicHeader() {
       <div className="container mx-auto flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
           <Image
-            src="/logo.png"
+            src="/Logo.png"
             alt="Collab-Verse Logo"
             width={40}
             height={40}
