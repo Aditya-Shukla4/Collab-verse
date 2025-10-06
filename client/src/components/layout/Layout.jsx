@@ -5,38 +5,18 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 
 export default function Layout({ children }) {
-  // Initialize state from localStorage or default based on screen size
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
-    // Only access localStorage on client side
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("sidebarOpen");
-      if (saved !== null) {
-        return saved === "true";
-      }
-      // Default: open on desktop, closed on mobile
-      return window.innerWidth >= 1024;
+  // Initialize sidebar state based on screen size only (no localStorage)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Set initial state - always closed on page load
+  useEffect(() => {
+    // Only run once on mount
+    if (!isInitialized) {
+      setIsSidebarOpen(false); // Always start closed
+      setIsInitialized(true);
     }
-    return true; // Default for SSR
-  });
-
-  // Save sidebar state to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem("sidebarOpen", isSidebarOpen.toString());
-  }, [isSidebarOpen]);
-
-  // Handle window resize to auto-close on mobile if needed
-  useEffect(() => {
-    const handleResize = () => {
-      // Optional: auto-close sidebar when resizing to mobile
-      if (window.innerWidth < 1024 && isSidebarOpen) {
-        // Uncomment the line below if you want sidebar to auto-close on resize to mobile
-        // setIsSidebarOpen(false);
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [isSidebarOpen]);
+  }, [isInitialized]);
 
   // Function to toggle the state
   const toggleSidebar = () => {
