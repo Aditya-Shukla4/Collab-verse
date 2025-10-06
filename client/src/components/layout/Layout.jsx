@@ -1,22 +1,12 @@
 // client/src/components/layout/Layout.jsx
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 
 export default function Layout({ children }) {
-  // Initialize sidebar state based on screen size only (no localStorage)
+  // Always start with sidebar CLOSED - simple and clean
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Set initial state - always closed on page load
-  useEffect(() => {
-    // Only run once on mount
-    if (!isInitialized) {
-      setIsSidebarOpen(false); // Always start closed
-      setIsInitialized(true);
-    }
-  }, [isInitialized]);
 
   // Function to toggle the state
   const toggleSidebar = () => {
