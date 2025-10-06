@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button";
 
 export default function Header({ toggleSidebar, isSidebarOpen }) {
   return (
-    // justify-between will push the items to the ends
     <header className="sticky top-0 z-20 flex items-center justify-between gap-4 p-4 border-b border-zinc-800 bg-zinc-950/70 backdrop-blur-lg">
-      {/* --- Left Side of the Header --- */}
       <div className="flex items-center gap-4">
+        {/* --- CRITICAL: This is the main toggle button for all screen sizes --- */}
         <Button
           onClick={toggleSidebar}
           variant="ghost"
@@ -20,7 +19,7 @@ export default function Header({ toggleSidebar, isSidebarOpen }) {
           <Menu className="h-6 w-6" />
         </Button>
 
-        {/* Your smart logic to hide the title when sidebar is open */}
+        {/* Hide logo/title when sidebar is open to avoid duplication */}
         {!isSidebarOpen && (
           <Link href="/dashboard" className="flex items-center gap-3">
             <Image
@@ -37,7 +36,6 @@ export default function Header({ toggleSidebar, isSidebarOpen }) {
         )}
       </div>
 
-      {/* --- Right Side of the Header --- */}
       <div className="flex items-center gap-4">
         <Button
           asChild

@@ -1,5 +1,3 @@
-// client/src/components/layout/Sidebar.jsx
-
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/router";
@@ -29,7 +27,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
       href: "/requests",
       label: "Requests",
       icon: Inbox,
-      // Correctly calculates the total number of notifications
       count:
         (user.receivedCollabRequests?.length || 0) +
         (user.projectInvites?.length || 0),
@@ -47,11 +44,11 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
         }`}
       />
 
-      {/* The Sidebar itself */}
+      {/* The Sidebar itself, now fully controlled by the 'isOpen' prop */}
       <aside
-        className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-zinc-800 bg-zinc-950/95 backdrop-blur-lg text-white flex flex-col transition-transform duration-300 ease-in-out 
-                  ${isOpen ? "translate-x-0" : "-translate-x-full"}
-                  lg:translate-x-0`} // On desktop (lg), it's always visible
+        className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-zinc-800 bg-zinc-950/95 backdrop-blur-lg text-white flex flex-col transition-transform duration-300 ease-in-out ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
           <Link href="/dashboard" className="flex items-center gap-3">
@@ -64,7 +61,8 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             />
             <span className="text-xl font-semibold">Collab Verse</span>
           </Link>
-          {/* Close button is now hidden on desktop */}
+
+          {/* --- CRITICAL: 'lg:hidden' hides this button on desktop --- */}
           <button
             onClick={toggleSidebar}
             className="text-zinc-400 hover:text-white lg:hidden"
@@ -72,6 +70,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             <CloseIcon size={20} />
           </button>
         </div>
+
         <nav className="flex-grow p-4 overflow-y-auto">
           <ul className="space-y-2">
             {navLinks.map((link) => (

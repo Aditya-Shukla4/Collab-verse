@@ -35,7 +35,6 @@ export default function LoginPage() {
     setError(null);
     try {
       await login(email, password); // One line to rule them all
-      router.push("/dashboard"); // Redirect on success
     } catch (err) {
       setError(
         err.response?.data?.message || "Login failed. Please try again."

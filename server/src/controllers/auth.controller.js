@@ -83,7 +83,12 @@ export const githubCallback = (req, res) => {
 
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5h" });
 
-  res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
+  const redirectUrl =
+    process.env.NODE_ENV === "production"
+      ? process.env.CLIENT_URL
+      : "http://localhost:3000";
+
+  res.redirect(`${redirectUrl}/auth/callback?token=${token}`);
 };
 
 // NOTE: The getMyProfile function should be in user.controller.js, not here.

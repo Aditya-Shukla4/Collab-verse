@@ -36,10 +36,7 @@ app.use("/api/auth", authRoutes);
 
 app.use(
   cors({
-    origin: [
-      "https://collab-verse.vercel.app",
-      "http://localhost:3000"
-    ],
+    origin: ["https://collab-verse.vercel.app", "http://localhost:3000"],
     credentials: true,
   })
 );
