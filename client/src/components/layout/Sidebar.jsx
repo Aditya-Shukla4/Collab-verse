@@ -29,27 +29,29 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
       href: "/requests",
       label: "Requests",
       icon: Inbox,
-      count: user.receivedCollabRequests?.length || 0,
+      // Correctly calculates the total number of notifications
+      count:
+        (user.receivedCollabRequests?.length || 0) +
+        (user.projectInvites?.length || 0),
     },
     { href: `/profile/${user._id}`, label: "My Profile", icon: User },
   ];
 
   return (
     <>
-      {/* --- THIS IS THE CHANGE --- */}
-      {/* The 'lg:hidden' class has been REMOVED from the overlay */}
+      {/* Overlay for mobile */}
       <div
         onClick={toggleSidebar}
-        className={`fixed inset-0 bg-black/60 z-30 transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/60 z-30 transition-opacity duration-300 lg:hidden ${
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
       />
 
       {/* The Sidebar itself */}
       <aside
-        className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-zinc-800 bg-zinc-950/95 backdrop-blur-lg text-white flex flex-col transition-transform duration-300 ease-in-out ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-zinc-800 bg-zinc-950/95 backdrop-blur-lg text-white flex flex-col transition-transform duration-300 ease-in-out 
+                  ${isOpen ? "translate-x-0" : "-translate-x-full"}
+                  lg:translate-x-0`} // On desktop (lg), it's always visible
       >
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
           <Link href="/dashboard" className="flex items-center gap-3">
@@ -62,21 +64,23 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             />
             <span className="text-xl font-semibold">Collab Verse</span>
           </Link>
+          {/* Close button is now hidden on desktop */}
           <button
             onClick={toggleSidebar}
-            className="text-zinc-400 hover:text-white"
+            className="text-zinc-400 hover:text-white lg:hidden"
           >
             <CloseIcon size={20} />
           </button>
         </div>
-
         <nav className="flex-grow p-4 overflow-y-auto">
           <ul className="space-y-2">
             {navLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  onClick={toggleSidebar}
+                  onClick={() => {
+                    if (window.innerWidth < 1024) toggleSidebar();
+                  }}
                   className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-800 ${
                     pathname === link.href
                       ? "bg-zinc-800 text-white"
@@ -95,7 +99,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             ))}
           </ul>
         </nav>
-
         <div className="p-4 border-t border-zinc-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 flex-1 min-w-0">
