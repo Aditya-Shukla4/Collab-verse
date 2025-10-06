@@ -12,7 +12,6 @@ import {
   Inbox,
   User,
   LogOut,
-  X as CloseIcon,
 } from "lucide-react";
 
 export default function Sidebar({ isOpen, toggleSidebar }) {
@@ -46,13 +45,13 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
         }`}
       />
 
-      {/* Sidebar - on desktop (lg+), always visible when isOpen=true, on mobile it slides over */}
+      {/* Sidebar - slides in from left on all screen sizes */}
       <aside
         className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-zinc-800 bg-zinc-950/95 backdrop-blur-lg text-white flex flex-col transition-transform duration-300 ease-in-out
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        <div className="flex items-center justify-between p-4 border-b border-zinc-800">
+        <div className="flex items-center justify-center p-4 border-b border-zinc-800">
           <Link href="/dashboard" className="flex items-center gap-3">
             <Image
               src="/Logo.png"
@@ -63,15 +62,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             />
             <span className="text-xl font-semibold">Collab Verse</span>
           </Link>
-
-          {/* Close button - visible on all screens when sidebar is open */}
-          <button
-            onClick={toggleSidebar}
-            className="text-zinc-400 hover:text-white transition-colors"
-            aria-label="Close sidebar"
-          >
-            <CloseIcon size={20} />
-          </button>
         </div>
 
         <nav className="flex-grow p-4 overflow-y-auto">
