@@ -1,3 +1,5 @@
+// client/src/components/layout/Sidebar.jsx
+
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/router";
@@ -36,7 +38,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
   return (
     <>
-      {/* Overlay for mobile */}
+      {/* Overlay for mobile - only show when sidebar is open */}
       <div
         onClick={toggleSidebar}
         className={`fixed inset-0 bg-black/60 z-30 transition-opacity duration-300 lg:hidden ${
@@ -44,11 +46,11 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
         }`}
       />
 
-      {/* The Sidebar itself, now fully controlled by the 'isOpen' prop */}
+      {/* Sidebar - on desktop (lg+), always visible when isOpen=true, on mobile it slides over */}
       <aside
-        className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-zinc-800 bg-zinc-950/95 backdrop-blur-lg text-white flex flex-col transition-transform duration-300 ease-in-out ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-zinc-800 bg-zinc-950/95 backdrop-blur-lg text-white flex flex-col transition-transform duration-300 ease-in-out
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
       >
         <div className="flex items-center justify-between p-4 border-b border-zinc-800">
           <Link href="/dashboard" className="flex items-center gap-3">
@@ -62,10 +64,11 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             <span className="text-xl font-semibold">Collab Verse</span>
           </Link>
 
-          {/* --- CRITICAL: 'lg:hidden' hides this button on desktop --- */}
+          {/* Close button - visible on all screens when sidebar is open */}
           <button
             onClick={toggleSidebar}
-            className="text-zinc-400 hover:text-white lg:hidden"
+            className="text-zinc-400 hover:text-white transition-colors"
+            aria-label="Close sidebar"
           >
             <CloseIcon size={20} />
           </button>
@@ -78,6 +81,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                 <Link
                   href={link.href}
                   onClick={() => {
+                    // Only auto-close on mobile
                     if (window.innerWidth < 1024) toggleSidebar();
                   }}
                   className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-800 ${
@@ -98,6 +102,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
             ))}
           </ul>
         </nav>
+
         <div className="p-4 border-t border-zinc-800">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 flex-1 min-w-0">

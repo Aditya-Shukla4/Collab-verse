@@ -152,7 +152,7 @@ export default function DashboardPage() {
             placeholder="Search by name, tech stack, or location..."
             className="w-full p-6 text-lg bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
             value={universalQuery}
-            onChange={(e) => setUniversalQuery(e.g.e.target.value)}
+            onChange={(e) => setUniversalQuery(e.target.value)} // FIXED: removed the extra 'g.e.'
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
