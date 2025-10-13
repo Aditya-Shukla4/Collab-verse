@@ -94,7 +94,7 @@ io.on("connection", (socket) => {
       if (language === "javascript") {
         executionResult = executeCode(code, input);
       } else {
-        const microserviceUrl = "http://localhost:6000/api/run";
+        const microserviceUrl = `${process.env.COMPILER_API_URL}/api/run`;
         const response = await axios.post(microserviceUrl, {
           code,
           input,
