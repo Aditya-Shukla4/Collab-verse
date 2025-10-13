@@ -83,20 +83,7 @@ export const githubCallback = (req, res) => {
 
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5h" });
 
-  const redirectUrl =
-    process.env.NODE_ENV === "production"
-      ? process.env.CLIENT_URL
-      : "http://localhost:3000";
+  const redirectUrl = process.env.CLIENT_URL; // Simple aur consistent
 
   res.redirect(`${redirectUrl}/auth/callback?token=${token}`);
-};
-
-// NOTE: The getMyProfile function should be in user.controller.js, not here.
-// But if it's here, it's fine for now. It relies on a working 'protect' middleware.
-export const getMyProfile = async (req, res) => {
-  if (req.user) {
-    res.json(req.user);
-  } else {
-    res.status(404).json({ message: "User not found" });
-  }
 };

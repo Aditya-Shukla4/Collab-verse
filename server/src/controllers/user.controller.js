@@ -9,14 +9,7 @@ export const searchUsers = async (req, res) => {
     const filter = {};
 
     if (query) {
-      const searchRegex = { $regex: query, $options: "i" };
-      filter.$or = [
-        { name: searchRegex },
-        { location: searchRegex },
-        { skills: searchRegex },
-        { occupation: searchRegex },
-        { bio: searchRegex },
-      ];
+      filter.$text = { $search: query };
     }
 
     const users = await User.find(filter).select("-password");
@@ -56,6 +49,7 @@ export const updateUserProfile = async (req, res) => {
       linkedinUrl,
       bio,
       collabPrefs,
+      collaborationStatus,
     } = req.body;
 
     const updatedFields = {
@@ -70,6 +64,7 @@ export const updateUserProfile = async (req, res) => {
       linkedinUrl,
       bio,
       collabPrefs,
+      collaborationStatus,
     };
 
     Object.keys(updatedFields).forEach(
@@ -149,23 +144,16 @@ export const getMyProjectInvites = async (req, res) => {
 
 export const getMyNotifications = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id)
-      .populate({
-        path: "receivedCollabRequests",
-        select: "name occupation avatarUrl skills",
-      })
-      .populate({
-        path: "projectInvites",
-        populate: { path: "createdBy", select: "name avatarUrl" },
-      });
-
+    const user = await User.findById(req.user.id).populate({
+      path: "receivedCollabRequests",
+      select: "name occupation avatarUrl skills",
+    });
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
 
     res.status(200).json({
       colleagueRequests: user.receivedCollabRequests,
-      projectInvites: user.projectInvites,
     });
   } catch (error) {
     console.error("ERROR in getMyNotifications:", error);

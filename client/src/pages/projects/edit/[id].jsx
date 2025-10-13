@@ -1,9 +1,10 @@
-// client/src/pages/projects/edit/[id].jsx
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import api from "@/api/axios";
 import { useAuth } from "@/context/AuthContext";
+import toast, { Toaster } from "react-hot-toast";
+
+// Shadcn UI Components
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -15,11 +16,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 
 export default function EditProjectPage() {
   const router = useRouter();
-  const { id } = router.query; // Get the project ID from the URL
-  const { isAuthenticated } = useAuth();
+  const { id } = router.query; // Project ID from URL
+  const { isAuthenticated, loading: authLoading, user } = useAuth();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -29,48 +31,57 @@ export default function EditProjectPage() {
     githubRepo: "",
     liveUrl: "",
   });
-  const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // --- Step 1: Fetch existing project data ---
+  // Step 1: Fetch existing project data
   useEffect(() => {
     if (!id || !isAuthenticated) return;
 
     const fetchProjectData = async () => {
       setIsLoading(true);
       try {
-        const response = await api.get(`/projects/${id}`);
-        const project = response.data;
-
-        // --- Step 2: Pre-fill the form ---
+        const { data } = await api.get(`/projects/${id}`);
+        // Ensure the logged-in user is the owner
+        if (data.createdBy._id !== user._id) {
+          toast.error("You are not authorized to edit this project.");
+          router.push("/dashboard");
+          return;
+        }
         setFormData({
-          title: project.title,
-          description: project.description,
-          techStack: project.techStack.join(", "),
-          rolesNeeded: project.rolesNeeded.join(", "),
-          githubRepo: project.githubRepo || "",
-          liveUrl: project.liveUrl || "",
+          title: data.title || "",
+          description: data.description || "",
+          techStack: data.techStack?.join(", ") || "",
+          rolesNeeded: data.rolesNeeded?.join(", ") || "",
+          githubRepo: data.githubRepo || "",
+          liveUrl: data.liveUrl || "",
         });
-      } catch (err) {
-        console.error("Failed to fetch project for editing:", err);
-        setError("Could not load project data. You may not be the owner.");
+      } catch (error) {
+        toast.error("Failed to fetch project data.");
+        router.push("/dashboard");
       } finally {
         setIsLoading(false);
       }
     };
+
     fetchProjectData();
-  }, [id, isAuthenticated]);
+  }, [id, isAuthenticated, user, router]);
+
+  // Page protection
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/LoginPage");
+    }
+  }, [isAuthenticated, authLoading, router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // --- Step 3: Send an update (PUT) request ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
+    setIsSubmitting(true);
 
     const projectData = {
       ...formData,
@@ -85,36 +96,36 @@ export default function EditProjectPage() {
     };
 
     try {
+      // Use PUT request for updating existing data
       await api.put(`/projects/${id}`, projectData);
-      // Redirect back to the project details page on success
-      router.push(`/projects/${id}`);
+      toast.success("Project Updated Successfully!");
+      router.push(`/projects/${id}`); // Redirect to the project detail page
     } catch (err) {
-      console.error("Failed to update project:", err);
-      setError(
-        err.response?.data?.message || "An error occurred. Please try again."
-      );
+      const errorMessage = err.response?.data?.message || "An error occurred.";
+      toast.error(errorMessage);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (isLoading) {
+  if (authLoading || isLoading || !isAuthenticated) {
     return (
-      <div className="text-center text-white py-20">Loading Editor...</div>
+      <div className="flex justify-center items-center h-screen text-white bg-zinc-950">
+        Loading Project Editor...
+      </div>
     );
-  }
-  if (error) {
-    return <div className="text-center text-red-500 py-20">{error}</div>;
   }
 
   return (
-    <main>
+    <main className="container mx-auto p-4 md:p-8">
+      <Toaster
+        position="bottom-center"
+        toastOptions={{ style: { background: "#333", color: "#fff" } }}
+      />
       <Card className="max-w-3xl mx-auto bg-zinc-900 border-zinc-800 text-white">
         <CardHeader>
           <CardTitle className="text-3xl font-bold">Edit Project</CardTitle>
-          <CardDescription>
-            Update the details for your project.
-          </CardDescription>
+          <CardDescription>Update your project details below.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -129,6 +140,7 @@ export default function EditProjectPage() {
                 className="bg-zinc-800 border-zinc-700"
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="description">Project Description</Label>
               <Textarea
@@ -141,6 +153,7 @@ export default function EditProjectPage() {
                 rows={5}
               />
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="techStack">Tech Stack (comma-separated)</Label>
               <Input
@@ -149,9 +162,26 @@ export default function EditProjectPage() {
                 value={formData.techStack}
                 onChange={handleChange}
                 required
+                placeholder="e.g., React, Node.js, MongoDB"
                 className="bg-zinc-800 border-zinc-700"
               />
+              <div className="flex flex-wrap gap-2 pt-2">
+                {formData.techStack
+                  .split(",")
+                  .map((item) => item.trim())
+                  .filter(Boolean)
+                  .map((skill) => (
+                    <Badge
+                      key={skill}
+                      variant="outline"
+                      className="border-purple-500/50 text-purple-300"
+                    >
+                      {skill}
+                    </Badge>
+                  ))}
+              </div>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="rolesNeeded">
                 Roles Needed (comma-separated)
@@ -161,9 +191,26 @@ export default function EditProjectPage() {
                 name="rolesNeeded"
                 value={formData.rolesNeeded}
                 onChange={handleChange}
+                placeholder="e.g., Frontend Developer, UI/UX Designer"
                 className="bg-zinc-800 border-zinc-700"
               />
+              <div className="flex flex-wrap gap-2 pt-2">
+                {formData.rolesNeeded
+                  .split(",")
+                  .map((item) => item.trim())
+                  .filter(Boolean)
+                  .map((role) => (
+                    <Badge
+                      key={role}
+                      variant="outline"
+                      className="border-purple-500/50 text-purple-300"
+                    >
+                      {role}
+                    </Badge>
+                  ))}
+              </div>
             </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="githubRepo">GitHub Repository URL</Label>
@@ -173,6 +220,7 @@ export default function EditProjectPage() {
                   type="url"
                   value={formData.githubRepo}
                   onChange={handleChange}
+                  placeholder="https://github.com/user/repo"
                   className="bg-zinc-800 border-zinc-700"
                 />
               </div>
@@ -184,18 +232,18 @@ export default function EditProjectPage() {
                   type="url"
                   value={formData.liveUrl}
                   onChange={handleChange}
+                  placeholder="https://myproject.com"
                   className="bg-zinc-800 border-zinc-700"
                 />
               </div>
             </div>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="w-full bg-purple-600 hover:bg-purple-700"
             >
-              {isLoading ? "Saving..." : "Save Changes"}
+              {isSubmitting ? "Saving Changes..." : "Save Changes"}
             </Button>
           </form>
         </CardContent>

@@ -25,7 +25,12 @@ import {
 
 export default function CreateProfilePage() {
   const router = useRouter();
-  const { user, loading: authLoading, isAuthenticated } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+    isAuthenticated,
+    refetchUser,
+  } = useAuth();
 
   // CORRECT: Your comprehensive state object
   const [profileData, setProfileData] = useState({
@@ -63,6 +68,7 @@ export default function CreateProfilePage() {
         otherUrl: user.otherUrl || "",
         bio: user.bio || "",
         collabPrefs: user.collabPrefs || "",
+        collaborationStatus: user.collaborationStatus || "",
       });
     }
   }, [user, authLoading, isAuthenticated, router]);
@@ -74,11 +80,10 @@ export default function CreateProfilePage() {
   const handleStatusChange = (value) => {
     setProfileData({ ...profileData, collaborationStatus: value });
   };
-  // CORRECT: A merged handleSubmit with your data logic and my API logic
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Your logic for preparing data is good
       const dataToSend = {
         ...profileData,
         interests: profileData.interests
@@ -94,12 +99,10 @@ export default function CreateProfilePage() {
       // My logic for the API call is correct and secure
       await api.put("/users/me", dataToSend);
 
-      router.push("/dashboard");
+      await refetchUser();
+      router.push(`/profile/${user._id}`);
     } catch (error) {
       console.error("Failed to update profile:", error);
-      alert(
-        `Update failed: ${error.response?.data?.message || "Server error"}`
-      );
     }
   };
 
@@ -111,7 +114,6 @@ export default function CreateProfilePage() {
     );
   }
 
-  // CORRECT: Your beautiful and comprehensive form UI
   return (
     <main
       className="flex flex-col items-center justify-center p-4 md:p-8"

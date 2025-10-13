@@ -4,6 +4,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { SocketProvider } from "@/context/SocketContext";
 import Layout from "@/components/layout/Layout";
 import PublicHeader from "@/components/layout/PublicHeader"; // We'll move PublicHeader to its own file
+import SearchModal from "@/components/search/SearchModal";
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();

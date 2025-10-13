@@ -1,69 +1,29 @@
-// client/src/pages/dashboard.jsx
+// client/src/pages/DashboardPage.jsx
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/axios";
+import useSearchStore from "@/store/searchStore";
 import ProjectCard from "@/components/projects/ProjectCard";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Check, X } from "lucide-react";
+import UserCard from "@/components/users/UserCard";
 
-const UserCard = ({ dev }) => (
-  <Card className="bg-zinc-900 border border-zinc-800 text-white flex flex-col h-full p-6">
-    <div className="flex items-center gap-4 mb-4">
-      <Avatar className="h-12 w-12 border-2 border-zinc-700">
-        <AvatarImage src={dev.avatarUrl} alt={dev.name} />
-        <AvatarFallback className="bg-zinc-800 text-zinc-300">
-          {dev.name ? dev.name.substring(0, 2).toUpperCase() : "DV"}
-        </AvatarFallback>
-      </Avatar>
-      <div className="flex-1">
-        <CardTitle className="text-lg font-semibold">{dev.name}</CardTitle>
-        <CardDescription className="text-zinc-400 text-sm">
-          {dev.occupation || "Developer"} - {dev.location || "Remote"}
-        </CardDescription>
-      </div>
-    </div>
-    <div className="mb-4">
-      <h3 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold mb-2">
-        Tech Stack
-      </h3>
-      <div className="flex flex-wrap gap-2">
-        {dev.skills?.slice(0, 4).map((skill) => (
-          <Badge
-            key={skill}
-            variant="secondary"
-            className="bg-zinc-800 border-zinc-700 text-zinc-300 font-normal"
-          >
-            {skill}
-          </Badge>
-        ))}
-      </div>
-    </div>
-    <div className="flex-grow mb-4">
-      <h3 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold mb-2">
-        About Me
-      </h3>
-      <p className="text-zinc-400 text-sm line-clamp-3">
-        {dev.bio || "No bio available."}
-      </p>
-    </div>
-    <Link href={`/profile/${dev._id}`} passHref>
-      <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold">
-        View Profile
-      </Button>
-    </Link>
-  </Card>
+// UI Components
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+
+// ✅ Ek chota, reusable component khaali state ke liye
+const EmptyState = ({ title, message }) => (
+  <div className="text-center py-20 bg-zinc-900/50 rounded-lg border border-zinc-800 w-full">
+    <h3 className="text-xl font-semibold text-white">{title}</h3>
+    <p className="text-zinc-400 mt-2">{message}</p>
+  </div>
 );
 
 export default function DashboardPage() {
@@ -73,8 +33,9 @@ export default function DashboardPage() {
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [universalQuery, setUniversalQuery] = useState("");
+  const { query: universalQuery } = useSearchStore(); // Sirf query lo
 
+  // Data fetching logic (yeh theek hai)
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) router.push("/LoginPage");
@@ -104,15 +65,9 @@ export default function DashboardPage() {
         setIsLoading(false);
       }
     };
-    const debounceTimer = setTimeout(() => {
-      fetchData();
-    }, 500);
+    const debounceTimer = setTimeout(fetchData, 500);
     return () => clearTimeout(debounceTimer);
   }, [universalQuery, isAuthenticated, authLoading, user]);
-
-  const handleProjectDeleted = (deletedProjectId) => {
-    setProjects((current) => current.filter((p) => p._id !== deletedProjectId));
-  };
 
   if (authLoading || isLoading) {
     return (
@@ -120,8 +75,9 @@ export default function DashboardPage() {
     );
   }
 
+  // ❌ Tumhara <main> tag yahan tha, jisse hydration error aa raha tha. Usko hata diya hai.
   return (
-    <main>
+    <div>
       <div className="space-y-2 mb-8">
         <h1 className="text-4xl font-bold tracking-tighter text-white">
           Welcome back, {user?.name || "Developer"}!
@@ -131,36 +87,85 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold tracking-tight text-white mb-6">
-          Latest Projects
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-          {projects.map((project) => (
-            <ProjectCard key={project._id} project={project} isOwner={false} />
-          ))}
-        </div>
-      </div>
+      <Tabs defaultValue="projects" className="w-full">
+        <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-zinc-800 p-1 text-zinc-400 max-w-md mx-auto mb-8 w-full">
+          <TabsTrigger value="projects" className="... w-1/2">
+            Projects
+          </TabsTrigger>
+          <TabsTrigger value="developers" className="... w-1/2">
+            Developers
+          </TabsTrigger>
+        </TabsList>
 
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-white mb-6">
-          Find Developers
-        </h2>
-        <div className="mb-8">
-          <Input
-            type="text"
-            placeholder="Search by name, tech stack, or location..."
-            className="w-full p-6 text-lg bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500"
-            value={universalQuery}
-            onChange={(e) => setUniversalQuery(e.target.value)} // FIXED: removed the extra 'g.e.'
-          />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-          {users.map((dev) => (
-            <UserCard key={dev._id} dev={dev} />
-          ))}
-        </div>
-      </div>
-    </main>
+        {/* --- PROJECTS TAB CONTENT --- */}
+        <TabsContent value="projects">
+          <div className="flex justify-center">
+            {/* ✅ YEH HAI ASLI FIX (Part 1) */}
+            {projects.length > 0 ? (
+              <Carousel
+                opts={{ align: "start", loop: projects.length > 3 }}
+                className="w-full max-w-xs sm:max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-7xl"
+              >
+                <CarouselContent className="-ml-4">
+                  {projects.map((project) => (
+                    <CarouselItem
+                      key={project._id}
+                      className="pl-4 md:basis-1/2 lg:basis-1/3"
+                    >
+                      <div className="p-1 h-full">
+                        <ProjectCard
+                          project={project}
+                          isOwner={user?._id === project.createdBy}
+                        />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="hidden sm:inline-flex" />
+                <CarouselNext className="hidden sm:inline-flex" />
+              </Carousel>
+            ) : (
+              <EmptyState
+                title="No Projects Found"
+                message="Check back later or create a new project!"
+              />
+            )}
+          </div>
+        </TabsContent>
+
+        {/* --- DEVELOPERS TAB CONTENT --- */}
+        <TabsContent value="developers">
+          <div className="flex justify-center">
+            {/* ✅ YEH HAI ASLI FIX (Part 2) */}
+            {users.length > 0 ? (
+              <Carousel
+                opts={{ align: "start", loop: users.length > 3 }}
+                className="w-full max-w-xs sm:max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-7xl"
+              >
+                <CarouselContent className="-ml-4">
+                  {users.map((dev) => (
+                    <CarouselItem
+                      key={dev._id}
+                      className="pl-4 md:basis-1/2 lg:basis-1/3"
+                    >
+                      <div className="p-1 h-full">
+                        <UserCard dev={dev} />
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="hidden sm:inline-flex" />
+                <CarouselNext className="hidden sm:inline-flex" />
+              </Carousel>
+            ) : (
+              <EmptyState
+                title="No Developers Found"
+                message="Try a different search term in the global search."
+              />
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

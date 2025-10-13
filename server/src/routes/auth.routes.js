@@ -8,7 +8,6 @@ import {
   register,
   login,
   githubCallback,
-  getMyProfile,
 } from "../controllers/auth.controller.js";
 
 const router = express.Router();
@@ -49,7 +48,5 @@ router.get(
   }),
   githubCallback
 );
-
-router.get("/profile", protect, getMyProfile);
 
 export default router;

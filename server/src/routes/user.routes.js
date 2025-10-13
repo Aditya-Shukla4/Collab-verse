@@ -1,37 +1,30 @@
 // server/src/routes/user.routes.js
 
 import express from "express";
-
 import {
   getMyProfile,
   updateUserProfile,
   getUserById,
   searchUsers,
   getMyColleagues,
-  getMyProjectInvites,
+  getMyProjectInvites, // Ab yeh use ho raha hai
   getMyNotifications,
 } from "../controllers/user.controller.js";
-
 import { protect } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-// Rule #1: Handle the universal search.
-// Catches GET /api/users and GET /api/users?query=...
+// Universal search for users
 router.get("/", protect, searchUsers);
 
-// Rule #2: Handle the specific, static route for the logged-in user's profile FIRST.
-router.get("/me", protect, getMyProfile);
+// Routes for the logged-in user ('/me')
+router.route("/me").get(protect, getMyProfile).put(protect, updateUserProfile); // Sahi tareeka
 
-// Rule #3: Handle profile updates.
-router.put("/profile", protect, updateUserProfile);
+router.get("/me/colleagues", protect, getMyColleagues);
+router.get("/me/notifications", protect, getMyNotifications);
+router.get("/me/invites", protect, getMyProjectInvites); // Naya route
 
-// Rule #4: NOW, handle the dynamic route for any other user's profile LAST.
-// This will only run if the path is not "/me".
+// Route for fetching any user's public profile (MUST be last)
 router.get("/:id", protect, getUserById);
-
-router.route("/me/colleagues").get(protect, getMyColleagues);
-
-router.route("/me/notifications").get(protect, getMyNotifications);
 
 export default router;

@@ -51,7 +51,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        <div className="flex items-center justify-center p-4 border-b border-zinc-800">
+        <div className="flex items-center justify-center p-4">
           <Link href="/dashboard" className="flex items-center gap-3">
             <Image
               src="/Logo.png"
@@ -93,7 +93,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-zinc-800">
+        <div className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <Avatar className="h-9 w-9 flex-shrink-0">

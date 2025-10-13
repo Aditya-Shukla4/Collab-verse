@@ -18,6 +18,11 @@ const userSchema = new mongoose.Schema(
     occupation: { type: String, default: "", trim: true },
     location: { type: String, default: "", trim: true },
     bio: { type: String, default: "", trim: true, maxlength: 500 },
+    collaborationStatus: {
+      type: String,
+      enum: ["Open to Collab", "Seeking Opportunities", "Just Browsing"],
+      default: "Just Browsing",
+    },
     avatarUrl: { type: String, default: "" },
     skills: [{ type: String, trim: true }],
     interests: { type: [String], default: [] },
@@ -60,6 +65,15 @@ const userSchema = new mongoose.Schema(
 
   { timestamps: true }
 );
+
+userSchema.index({
+  name: "text",
+  email: "text",
+  occupation: "text",
+  location: "text",
+  bio: "text",
+  skills: "text",
+});
 
 userSchema.methods.toJSON = function () {
   const user = this.toObject();

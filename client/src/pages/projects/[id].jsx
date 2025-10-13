@@ -292,7 +292,7 @@ export default function ProjectDetailsPage() {
               </Dialog>
             )}
           </div>
-          <Card className="bg-zinc-900 border-zinc-800">
+          <Card className="bg-zinc-900 border-zinc-800 text-white">
             <CardHeader>
               <CardTitle>Project Description</CardTitle>
             </CardHeader>
@@ -302,7 +302,7 @@ export default function ProjectDetailsPage() {
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-zinc-900 border-zinc-800">
+          <Card className="bg-zinc-900 border-zinc-800 text-white">
             <CardHeader>
               <CardTitle>Tech Stack</CardTitle>
             </CardHeader>
@@ -310,7 +310,8 @@ export default function ProjectDetailsPage() {
               {project.techStack.map((tech, index) => (
                 <Badge
                   key={`${tech}-${index}`}
-                  className="bg-zinc-800 border-zinc-700 text-zinc-300 font-normal"
+                  variant="outline"
+                  className="border-purple-500/50 text-purple-300"
                 >
                   {tech}
                 </Badge>
@@ -318,7 +319,7 @@ export default function ProjectDetailsPage() {
             </CardContent>
           </Card>
           {project.rolesNeeded && project.rolesNeeded.length > 0 && (
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-zinc-900 border-zinc-800 text-white">
               <CardHeader>
                 <CardTitle>Roles Needed</CardTitle>
               </CardHeader>
@@ -358,7 +359,7 @@ export default function ProjectDetailsPage() {
           {isOwner &&
             project.joinRequests &&
             project.joinRequests.length > 0 && (
-              <Card className="bg-zinc-900 border-purple-500/50">
+              <Card className="bg-zinc-900 border-purple-500/50 text-white">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between text-white">
                     <span>Join Requests</span>
@@ -414,7 +415,7 @@ export default function ProjectDetailsPage() {
               </Card>
             )}
           {(project.githubRepo || project.liveUrl) && (
-            <Card className="bg-zinc-900 border-zinc-800">
+            <Card className="bg-zinc-900 border-zinc-800 text-white">
               <CardHeader>
                 <CardTitle>Project Links</CardTitle>
               </CardHeader>
@@ -442,7 +443,7 @@ export default function ProjectDetailsPage() {
               </CardContent>
             </Card>
           )}
-          <Card className="bg-zinc-900 border-zinc-800">
+          <Card className="bg-zinc-900 border-zinc-800 text-white">
             <CardHeader>
               <CardTitle>Team Members ({project.members.length})</CardTitle>
             </CardHeader>

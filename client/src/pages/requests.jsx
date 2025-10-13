@@ -111,7 +111,8 @@ export default function RequestsPage() {
         </p>
       </div>
 
-      {colleagueRequests.length === 0 && projectInvites.length === 0 ? (
+      {(colleagueRequests || []).length === 0 &&
+      (projectInvites || []).length === 0 ? (
         <div className="text-center py-20 bg-black/20 rounded-lg">
           <Inbox className="mx-auto h-12 w-12 text-slate-500" />
           <h3 className="mt-4 text-lg font-medium text-white">

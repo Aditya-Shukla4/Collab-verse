@@ -1,9 +1,8 @@
-// client/src/pages/create-project.jsx
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import api from "@/api/axios";
 import { useAuth } from "@/context/AuthContext";
+import toast, { Toaster } from "react-hot-toast"; // Toast notifications ke liye
 
 // Shadcn UI Components
 import { Button } from "@/components/ui/button";
@@ -17,26 +16,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge"; // Badge import karo
 
 export default function CreateProjectPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth(); // Auth check
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    techStack: "", // We'll handle this as a comma-separated string
-    rolesNeeded: "", // Also a comma-separated string
+    techStack: "",
+    rolesNeeded: "",
     githubRepo: "",
     liveUrl: "",
   });
-  const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if user is not logged in
-  if (typeof window !== "undefined" && !isAuthenticated) {
-    router.push("/LoginPage");
-    return null;
-  }
+  // Page protection ka sahi tareeka
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/LoginPage");
+    }
+  }, [isAuthenticated, authLoading, router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -46,9 +46,7 @@ export default function CreateProjectPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError(null);
 
-    // Convert comma-separated strings to arrays
     const projectData = {
       ...formData,
       techStack: formData.techStack
@@ -63,28 +61,46 @@ export default function CreateProjectPage() {
 
     try {
       const response = await api.post("/projects", projectData);
-      // Redirect to the new project's detail page (we'll build this later)
-      // For now, let's redirect to the dashboard
-      router.push("/dashboard");
+      toast.success("Project Created Successfully!");
+
+      // Redirect to the new project's detail page
+      router.push(`/projects/${response.data._id}`);
     } catch (err) {
-      console.error("Failed to create project:", err);
-      setError(
-        err.response?.data?.message || "An error occurred. Please try again."
-      );
+      const errorMessage =
+        err.response?.data?.message || "An error occurred. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // Jab tak auth check ho raha hai, loading dikhao
+  if (authLoading || !isAuthenticated) {
+    return (
+      <div className="flex justify-center items-center h-screen text-white bg-zinc-950">
+        Loading...
+      </div>
+    );
+  }
+
   return (
     <main className="container mx-auto p-4 md:p-8">
+      <Toaster
+        position="bottom-center"
+        toastOptions={{
+          style: {
+            background: "#333",
+            color: "#fff",
+          },
+        }}
+      />
       <Card className="max-w-3xl mx-auto bg-zinc-900 border-zinc-800 text-white">
         <CardHeader>
           <CardTitle className="text-3xl font-bold">
             Create a New Project
           </CardTitle>
           <CardDescription>
-            Share your project idea and find collaborators.
+            Share your project idea and find collaborators to build it with.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -125,6 +141,17 @@ export default function CreateProjectPage() {
                 placeholder="e.g., React, Node.js, MongoDB"
                 className="bg-zinc-800 border-zinc-700"
               />
+              <div className="flex flex-wrap gap-2 pt-2">
+                {formData.techStack
+                  .split(",")
+                  .map((item) => item.trim())
+                  .filter(Boolean)
+                  .map((skill) => (
+                    <Badge key={skill} variant="secondary">
+                      {skill}
+                    </Badge>
+                  ))}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -139,6 +166,21 @@ export default function CreateProjectPage() {
                 placeholder="e.g., Frontend Developer, UI/UX Designer"
                 className="bg-zinc-800 border-zinc-700"
               />
+              <div className="flex flex-wrap gap-2 pt-2">
+                {formData.rolesNeeded
+                  .split(",")
+                  .map((item) => item.trim())
+                  .filter(Boolean)
+                  .map((role) => (
+                    <Badge
+                      key={role}
+                      variant="outline"
+                      className="text-white border-zinc-600"
+                    >
+                      {role}
+                    </Badge>
+                  ))}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -167,8 +209,6 @@ export default function CreateProjectPage() {
                 />
               </div>
             </div>
-
-            {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <Button
               type="submit"
