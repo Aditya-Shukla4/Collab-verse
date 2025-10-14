@@ -45,12 +45,12 @@ To provide developers with an **efficient, skill-based matching system** and the
 
 Collab-verse is a robust, full-stack application built primarily with JavaScript technologies, utilizing a modular, microservice-style architecture.
 
-  * **Frontend (Client):** **React/Next.js** (Inferred) for a modern, scalable, and responsive user interface.
-  * **Backend (Server):** **Node.js / Express.js** for a fast, non-blocking API layer.
-  * **Database:** **MongoDB** (Inferred) for flexible data storage, ideal for rapidly evolving user profile data and chat history.
-  * **Real-time Communication:** **Socket.io** (Inferred) for the real-time chat functionality.
-  * **Containerization:** **Docker** (Confirmed via `Dockerfile` in repository) for consistent deployment of the `compiler-service`.
-  * **Core Languages:** JavaScript, CSS.
+-  * **Frontend (Client):** **React/Next.js** (Inferred) for a modern, scalable, and responsive user interface.
+-  * **Backend (Server):** **Node.js / Express.js** for a fast, non-blocking API layer.
+-  * **Database:** **MongoDB** (Inferred) for flexible data storage, ideal for rapidly evolving user profile data and chat history.
+-  * **Real-time Communication:** **Socket.io** (Inferred) for the real-time chat functionality.
+-  * **Containerization:** **Docker** (Confirmed via `Dockerfile` in repository) for consistent deployment of the `compiler-service`.
+-  * **Core Languages:** JavaScript, CSS.
 
 -----
 
