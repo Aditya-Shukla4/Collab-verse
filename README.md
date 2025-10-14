@@ -48,18 +48,6 @@ Follow these steps to run the `Colab-verse` project and begin generating text.
 
 ***
 
-## 📁 Project Structure
-
-The repository is structured to maximize simplicity and efficiency within the Colab environment.
-
-Colab-verse/
-├── main_notebook.ipynb     # Primary execution file. Contains all code, instructions, and examples.
-├── data/                   # Directory for sample input files, prompts, or generated output.
-└── src/                    # (Optional) For helper Python scripts if the project grows beyond a single notebook.
-
-
-***
-
 ## 🛠 Technologies Used
 
 * **Python** (The core programming language)
