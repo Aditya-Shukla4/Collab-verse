@@ -1,18 +1,14 @@
-/** @type {import('next').NextConfig} */
+// next.config.mjs
+import transpileModules from "next-transpile-modules";
+
+const withTM = transpileModules(["monaco-editor"]);
+
 const nextConfig = {
-  reactStrictMode: true,
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "i.pravatar.cc",
-      },
-      {
-        protocol: "https",
-        hostname: "cdn-icons-png.flaticon.com",
-      },
-    ],
+  reactStrictMode: false,
+  webpack: (config) => {
+    config.resolve.fallback = { fs: false, path: false };
+    return config;
   },
 };
 
-export default nextConfig;
+export default withTM(nextConfig);

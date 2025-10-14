@@ -346,6 +346,7 @@ export default function ProjectDetailsPage() {
                   value={code}
                   onChange={setCode}
                   projectId={project._id}
+                  projectData={project}
                 />
               </div>
             </div>

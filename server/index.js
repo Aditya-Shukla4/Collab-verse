@@ -74,12 +74,20 @@ io.on("connection", (socket) => {
     socket.to(data.projectId).emit("receive_code_change", data.newCode);
   });
 
-  socket.on("save_code", async ({ projectId, newCode }) => {
+  socket.on("save_code", async ({ projectId, newCode, language }) => {
     try {
-      await Project.findByIdAndUpdate(projectId, { codeContent: newCode });
-      console.log(`✅ Code saved for project: ${projectId}`);
+      await Project.findByIdAndUpdate(projectId, {
+        codeContent: newCode,
+        language: language,
+      });
+      console.log(
+        `✅ Code and language ('${language}') saved for project: ${projectId}`
+      );
     } catch (error) {
-      console.error("Error saving code:", error);
+      console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+      console.error("!!!!!!!!! ERROR SAVING CODE TO DB !!!!!!!");
+      console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+      console.error(error);
     }
   });
 
