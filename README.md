@@ -1,4 +1,4 @@
-# 🤝 Collab-verse: Swipe Right on Your Next Coding Partner\!
+# 🤝 Collab-verse — Match, Code, and Create with the Perfect Developer Partner.\!
 
 A web platform built to solve the fundamental challenge of **finding and connecting with the right developers** for projects, hackathons, and collaborative learning.
 
