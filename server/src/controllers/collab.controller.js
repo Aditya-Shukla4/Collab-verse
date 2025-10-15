@@ -1,10 +1,93 @@
 import User from "../models/user.model.js";
 import mongoose from "mongoose";
 import Collaboration from "../models/collaboration.model.js";
+import Project from "../models/project.model.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-// @desc    Send a collaboration request
+// --- PROJECT INVITATION LOGIC ---
+
+// @desc    Get all pending invitations for the logged-in user
+// @route   GET /api/collabs/invitations/pending
+export const getPendingInvitations = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const invitations = await Collaboration.find({
+      collaborator: userId,
+      status: "pending",
+    })
+      .populate("project", "title")
+      .populate("owner", "name avatarUrl");
+    res.status(200).json(invitations);
+  } catch (error) {
+    console.error("ERROR in getPendingInvitations:", error);
+    res.status(500).json({ message: "Server error fetching invitations." });
+  }
+};
+
+// @desc    Accept a project invitation
+// @route   PUT /api/collabs/invitations/:id/accept
+export const acceptProjectInvite = async (req, res) => {
+  console.log("--- TRYING TO ACCEPT INVITE (Collab Controller) ---");
+  try {
+    const collaborationId = req.params.id;
+    const userId = req.user.id;
+
+    const collab = await Collaboration.findById(collaborationId);
+
+    if (!collab || collab.collaborator.toString() !== userId) {
+      return res
+        .status(404)
+        .json({ message: "Invitation not found or not for you." });
+    }
+    if (collab.status !== "pending") {
+      return res
+        .status(400)
+        .json({ message: `This invitation was already ${collab.status}.` });
+    }
+
+    collab.status = "accepted";
+    await collab.save();
+
+    await Project.findByIdAndUpdate(collab.project, {
+      $addToSet: { members: userId },
+    });
+
+    res.status(200).json({ message: "Invitation accepted." });
+  } catch (error) {
+    console.error("ERROR in acceptProjectInvite:", error);
+    res.status(500).json({ message: "Server error while accepting invite." });
+  }
+};
+
+// @desc    Reject a project invitation
+// @route   DELETE /api/collabs/invitations/:id/reject
+export const rejectProjectInvite = async (req, res) => {
+  try {
+    const collaborationId = req.params.id;
+    const userId = req.user.id;
+
+    const result = await Collaboration.findOneAndDelete({
+      _id: collaborationId,
+      collaborator: userId,
+    });
+
+    if (!result) {
+      return res
+        .status(404)
+        .json({ message: "Invitation not found or not for you." });
+    }
+
+    res.status(200).json({ message: "Invitation rejected." });
+  } catch (error) {
+    console.error("ERROR in rejectProjectInvite:", error);
+    res.status(500).json({ message: "Server error while rejecting invite." });
+  }
+};
+
+// --- COLLEAGUE (DOSTI) REQUEST LOGIC ---
+
+// @desc    Send a collaboration request to another user
 export const sendCollabRequest = async (req, res) => {
   try {
     const senderId = req.user.id;
@@ -28,15 +111,13 @@ export const sendCollabRequest = async (req, res) => {
     if (sender.sentCollabRequests?.includes(receiverId))
       return res.status(400).json({ message: "Request already sent." });
 
-    // --- THE "RECEIPT" FIX ---
     await User.findByIdAndUpdate(receiverId, {
       $addToSet: { receivedCollabRequests: senderId },
     });
-    // Update the sender AND get the updated document back as a receipt
     const updatedSender = await User.findByIdAndUpdate(
       senderId,
       { $addToSet: { sentCollabRequests: receiverId } },
-      { new: true } // This option returns the updated document
+      { new: true }
     ).select("-password");
 
     res.status(200).json({ message: "Request sent.", user: updatedSender });
@@ -107,20 +188,19 @@ export const rejectCollabRequest = async (req, res) => {
 
     res
       .status(200)
-      .json({ message: "Request rejected.", user: updatedCurrentUser });
+      .json({ message: "Request handled.", user: updatedCurrentUser });
   } catch (error) {
-    console.error("Error rejecting request:", error);
+    console.error("Error rejecting/cancelling request:", error);
     res.status(500).json({ message: "Server error." });
   }
 };
 
+// @desc    Get all received colleague requests
 export const getReceivedRequests = async (req, res) => {
   try {
-    const userId = req.user.id;
-
-    const user = await User.findById(userId).populate({
+    const user = await User.findById(req.user.id).populate({
       path: "receivedCollabRequests",
-      select: "_id name occupation avatarUrl skills location",
+      select: "_id name occupation avatarUrl skills",
     });
 
     if (!user) {
@@ -131,22 +211,5 @@ export const getReceivedRequests = async (req, res) => {
   } catch (error) {
     console.error("ERROR in getReceivedRequests:", error);
     res.status(500).json({ message: "Server error while fetching requests." });
-  }
-};
-
-export const getPendingInvitations = async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const invitations = await Collaboration.find({
-      collaborator: userId,
-      status: "pending",
-    })
-      .populate("project", "title") // Project ka naam bhi saath me bhej do
-      .populate("owner", "name avatarUrl"); // Bhejne wale ka naam aur photo bhi
-
-    res.status(200).json(invitations);
-  } catch (error) {
-    res.status(500).json({ message: "Server error fetching invitations." });
   }
 };

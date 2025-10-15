@@ -51,6 +51,7 @@ app.use("/api/search", searchRoutes);
 
 // --- HTTP and Socket.IO Server Setup ---
 const httpServer = createServer(app);
+const activeUsersByRoom = {};
 const io = new Server(httpServer, {
   cors: {
     origin: clientURL,
@@ -62,9 +63,25 @@ const io = new Server(httpServer, {
 io.on("connection", (socket) => {
   console.log(`🔌 New client connected: ${socket.id}`);
 
-  socket.on("join_project_room", (projectId) => {
+  socket.on("join_project_room", ({ projectId, user }) => {
+    if (!user) return; // Agar user ki info nahi hai toh kuch mat kar
+
     socket.join(projectId);
-    console.log(`👍 Client ${socket.id} joined room: ${projectId}`);
+    console.log(
+      `👍 Client ${socket.id} (${user.name}) joined room: ${projectId}`
+    );
+
+    // Agar room pehli baar ban raha hai
+    if (!activeUsersByRoom[projectId]) {
+      activeUsersByRoom[projectId] = new Map();
+    }
+
+    // User ko active list me add karo (socket.id ko key banao)
+    activeUsersByRoom[projectId].set(socket.id, user);
+
+    // Poore room ko active users ki updated list (Array form me) bhejo
+    const usersInRoom = Array.from(activeUsersByRoom[projectId].values());
+    io.in(projectId).emit("room_users_update", usersInRoom);
   });
 
   socket.on("send_message", (data) => {
@@ -79,7 +96,7 @@ io.on("connection", (socket) => {
     try {
       await Project.findByIdAndUpdate(projectId, {
         codeContent: newCode,
-        language: language,
+        codeLanguage: language,
       });
       console.log(
         `✅ Code and language ('${language}') saved for project: ${projectId}`
@@ -124,6 +141,18 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log(`🔌 Client disconnected: ${socket.id}`);
+
+    // Har room se uss disconnected socket ko remove karo
+    for (const projectId in activeUsersByRoom) {
+      if (activeUsersByRoom[projectId].has(socket.id)) {
+        activeUsersByRoom[projectId].delete(socket.id);
+
+        // Room ko wapas nayi, updated list bhejo
+        const usersInRoom = Array.from(activeUsersByRoom[projectId].values());
+        io.in(projectId).emit("room_users_update", usersInRoom);
+        break; // Ek user ek hi baar disconnect hota hai
+      }
+    }
   });
 });
 

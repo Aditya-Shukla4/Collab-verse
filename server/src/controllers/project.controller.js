@@ -80,19 +80,15 @@ export const getProjectById = async (req, res) => {
 // 4. Get projects for the logged-in user
 export const getMyProjects = async (req, res) => {
   try {
-    // Find projects where the user is the creator OR a member
+    // 💥 NAYI LOGIC: Aise projects dhoondho jiska ya toh main owner (createdBy) hu,
+    // YA main uske members ki list me hu.
     const projects = await Project.find({
       $or: [{ createdBy: req.user.id }, { members: req.user.id }],
     })
+      .populate("createdBy", "name avatarUrl")
       .populate("members", "name avatarUrl")
-      .populate("joinRequests", "name avatarUrl")
       .sort({ createdAt: -1 });
 
-    if (!projects) {
-      return res
-        .status(404)
-        .json({ message: "No projects found for this user." });
-    }
     res.status(200).json(projects);
   } catch (error) {
     console.error("❌ ERROR in getMyProjects:", error);
@@ -228,11 +224,9 @@ export const acceptProjectInvite = async (req, res) => {
         .json({ message: "Invitation not found or not for you." });
     }
     if (collab.status !== "pending") {
-      return res
-        .status(400)
-        .json({
-          message: `This invitation has already been ${collab.status}.`,
-        });
+      return res.status(400).json({
+        message: `This invitation has already been ${collab.status}.`,
+      });
     }
 
     collab.status = "accepted";

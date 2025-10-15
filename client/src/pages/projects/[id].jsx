@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import api from "@/api/axios";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
 import toast, { Toaster } from "react-hot-toast";
 import ProjectChat from "@/components/projects/ProjectChat";
 import CodeEditor from "@/components/projects/CodeEditor";
@@ -37,6 +38,7 @@ export default function ProjectDetailsPage() {
   const router = useRouter();
   const { id } = router.query;
   const { user: loggedInUser } = useAuth();
+  const socket = useSocket();
 
   // Project states
   const [project, setProject] = useState(null);
@@ -46,10 +48,11 @@ export default function ProjectDetailsPage() {
 
   // Collaboration states
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [isInviting, setIsInviting] = useState({}); // Track individual button loading state
+  const [isInviting, setIsInviting] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [activeCollaborators, setActiveCollaborators] = useState([]);
 
   // Join request states
   const [joinStatus, setJoinStatus] = useState("loading");
@@ -72,53 +75,78 @@ export default function ProjectDetailsPage() {
     fetchProject().finally(() => setIsLoading(false));
   }, [id]);
 
-  // Determine user's status relative to the project
+  // Determine user's status and set initial code
   useEffect(() => {
-    if (!project || !loggedInUser) {
-      setJoinStatus("not_logged_in");
-      return;
-    }
-    if (project.createdBy._id === loggedInUser._id) {
-      setJoinStatus("owner");
-    } else if (
-      project.members.some((member) => member._id === loggedInUser._id)
-    ) {
-      setJoinStatus("member");
-    } else if (
-      project.joinRequests?.some((req) => req._id === loggedInUser._id)
-    ) {
-      setJoinStatus("requested");
-    } else {
-      setJoinStatus("can_request");
+    if (project) {
+      if (project.codeContent) {
+        setCode(project.codeContent);
+      }
+      if (!loggedInUser) {
+        setJoinStatus("not_logged_in");
+        return;
+      }
+      if (project.createdBy._id === loggedInUser._id) {
+        setJoinStatus("owner");
+      } else if (
+        project.members.some((member) => member._id === loggedInUser._id)
+      ) {
+        setJoinStatus("member");
+      } else if (
+        project.joinRequests?.some((req) => req._id === loggedInUser._id)
+      ) {
+        setJoinStatus("requested");
+      } else {
+        setJoinStatus("can_request");
+      }
     }
   }, [project, loggedInUser]);
 
-  // --- 💥 NEW SEARCH LOGIC (DEBOUNCED) 💥 ---
+  // --- Presence (Active Users) Logic ---
+  useEffect(() => {
+    if (socket && project && loggedInUser) {
+      const handleUpdate = (users) => {
+        setActiveCollaborators(users);
+      };
+      socket.on("room_users_update", handleUpdate);
+
+      socket.emit("join_project_room", {
+        projectId: id,
+        user: {
+          _id: loggedInUser._id,
+          name: loggedInUser.name,
+          avatarUrl: loggedInUser.avatarUrl,
+        },
+      });
+
+      return () => {
+        socket.off("room_users_update", handleUpdate);
+      };
+    }
+  }, [socket, id, project, loggedInUser]);
+
+  // --- Search & Invite Logic ---
   useEffect(() => {
     if (searchQuery.trim().length < 2) {
       setSearchResults([]);
       return;
     }
-
     setIsSearching(true);
-    const delayDebounceFn = setTimeout(async () => {
+    const debounceTimer = setTimeout(async () => {
       try {
         const { data } = await api.get(
           `/users/search-for-invite?query=${searchQuery}`
         );
         setSearchResults(data);
       } catch (err) {
-        console.error("Failed to search users:", err);
+        console.error("User search failed:", err);
         toast.error("Could not search for users.");
       } finally {
         setIsSearching(false);
       }
-    }, 500); // Debounce for 500ms
-
-    return () => clearTimeout(delayDebounceFn);
+    }, 500);
+    return () => clearTimeout(debounceTimer);
   }, [searchQuery]);
 
-  // --- 💥 NEW INVITE HANDLER 💥 ---
   const handleSendInvite = async (userToInvite) => {
     setIsInviting((prev) => ({ ...prev, [userToInvite._id]: true }));
     const toastId = toast.loading(`Inviting ${userToInvite.name}...`);
@@ -128,51 +156,90 @@ export default function ProjectDetailsPage() {
       });
       toast.success(`${userToInvite.name} has been invited.`, { id: toastId });
     } catch (err) {
-      const errorMessage =
-        err.response?.data?.message || "Failed to send invite.";
-      toast.error(errorMessage, { id: toastId });
+      toast.error(err.response?.data?.message || "Failed to send invite.", {
+        id: toastId,
+      });
     } finally {
       setIsInviting((prev) => ({ ...prev, [userToInvite._id]: false }));
     }
   };
 
-  // --- Your Existing Join Request Handlers ---
+  // --- Join Request Handlers ---
   const handleRequestToJoin = async () => {
     setIsSubmitting(true);
     try {
       await api.post(`/projects/${id}/request-join`);
       setJoinStatus("requested");
+      toast.success("Your request to join has been sent.");
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to send request.");
     } finally {
       setIsSubmitting(false);
     }
   };
+
   const handleAcceptRequest = async (applicantId) => {
     try {
       await api.put(`/projects/${id}/accept-join/${applicantId}`);
       toast.success("Request accepted!");
-      fetchProject(); // Refresh project data
+      fetchProject();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to accept request.");
     }
   };
+
   const handleRejectRequest = async (applicantId) => {
     try {
       await api.delete(`/projects/${id}/reject-join/${applicantId}`);
       toast.success("Request rejected.");
-      fetchProject(); // Refresh project data
+      fetchProject();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to reject request.");
     }
   };
 
-  // --- Render Join Button Logic ---
   const renderJoinButton = () => {
-    /* ... Your existing renderJoinButton logic ... */
+    switch (joinStatus) {
+      case "owner":
+        return (
+          <Button asChild className="w-full bg-zinc-700 hover:bg-zinc-600">
+            <Link href={`/projects/edit/${project._id}`}>
+              <Edit className="mr-2 h-4 w-4" /> Edit Project
+            </Link>
+          </Button>
+        );
+      case "member":
+        return (
+          <Button disabled className="w-full bg-green-600/50">
+            <CheckCircle className="mr-2 h-4 w-4" /> You are a member
+          </Button>
+        );
+      case "requested":
+        return (
+          <Button disabled className="w-full bg-zinc-700">
+            Request Pending
+          </Button>
+        );
+      case "can_request":
+        return (
+          <Button
+            onClick={handleRequestToJoin}
+            disabled={isSubmitting}
+            className="w-full bg-purple-600 hover:bg-purple-700"
+          >
+            <Send className="mr-2 h-4 w-4" />
+            {isSubmitting ? "Sending..." : "Request to Join"}
+          </Button>
+        );
+      default:
+        return (
+          <Button asChild className="w-full bg-purple-600 hover:bg-purple-700">
+            <Link href="/LoginPage">Login to Join</Link>
+          </Button>
+        );
+    }
   };
 
-  // --- RENDER LOGIC ---
   if (isLoading)
     return (
       <div className="text-center text-white py-20">Loading Project...</div>
@@ -196,7 +263,6 @@ export default function ProjectDetailsPage() {
         toastOptions={{ style: { background: "#333", color: "#fff" } }}
       />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex justify-between items-start">
             <div className="space-y-2">
@@ -227,6 +293,31 @@ export default function ProjectDetailsPage() {
                   <span className="font-medium">{project.createdBy.name}</span>
                 </Link>
               </div>
+              <div className="flex items-center gap-3 pt-2">
+                <div className="flex -space-x-2">
+                  {activeCollaborators.map((user) => (
+                    <Avatar
+                      key={user._id}
+                      className="h-8 w-8 rounded-full ring-2 ring-zinc-800"
+                      title={user.name}
+                    >
+                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                      <AvatarFallback>
+                        {user.name.substring(0, 1)}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+                </div>
+                {activeCollaborators.length > 0 && (
+                  <p className="text-xs text-slate-400">
+                    {activeCollaborators.length}{" "}
+                    {activeCollaborators.length > 1
+                      ? "collaborators"
+                      : "collaborator"}{" "}
+                    online.
+                  </p>
+                )}
+              </div>
             </div>
             {isOwner && (
               <Dialog
@@ -242,7 +333,7 @@ export default function ProjectDetailsPage() {
                   <DialogHeader>
                     <DialogTitle>Invite a Collaborator</DialogTitle>
                     <DialogDescription>
-                      Search for a user by their name or email to invite them.
+                      Search for a user by their name or email.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="relative my-4">
@@ -252,7 +343,7 @@ export default function ProjectDetailsPage() {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search by name or email..."
+                      placeholder="Search..."
                       className="pl-10 bg-zinc-800 border-zinc-700"
                     />
                   </div>
@@ -263,34 +354,35 @@ export default function ProjectDetailsPage() {
                       </p>
                     )}
                     {searchResults.length > 0
-                      ? searchResults.map((user) => (
+                      ? searchResults.map((userResult) => (
                           <div
-                            key={user._id}
+                            key={userResult._id}
                             className="flex items-center justify-between p-2 rounded-md hover:bg-zinc-800"
                           >
                             <div className="flex items-center gap-3">
                               <Avatar className="h-8 w-8">
-                                <AvatarImage
-                                  src={user.avatarUrl}
-                                  alt={user.name}
-                                />
+                                <AvatarImage src={userResult.avatarUrl} />
                                 <AvatarFallback>
-                                  {user.name.substring(0, 1)}
+                                  {userResult.name.substring(0, 1)}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
-                                <p className="font-semibold">{user.name}</p>
+                                <p className="font-semibold">
+                                  {userResult.name}
+                                </p>
                                 <p className="text-xs text-zinc-400">
-                                  {user.email}
+                                  {userResult.email}
                                 </p>
                               </div>
                             </div>
                             <Button
                               size="sm"
-                              onClick={() => handleSendInvite(user)}
-                              disabled={isInviting[user._id]}
+                              onClick={() => handleSendInvite(userResult)}
+                              disabled={isInviting[userResult._id]}
                             >
-                              {isInviting[user._id] ? "Inviting..." : "Invite"}
+                              {isInviting[userResult._id]
+                                ? "Sending..."
+                                : "Invite"}
                             </Button>
                           </div>
                         ))
@@ -316,40 +408,7 @@ export default function ProjectDetailsPage() {
               </p>
             </CardContent>
           </Card>
-          <Card className="bg-zinc-900 border-zinc-800 text-white">
-            <CardHeader>
-              <CardTitle>Tech Stack</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {project.techStack.map((tech, index) => (
-                <Badge
-                  key={`${tech}-${index}`}
-                  variant="outline"
-                  className="border-purple-500/50 text-purple-300"
-                >
-                  {tech}
-                </Badge>
-              ))}
-            </CardContent>
-          </Card>
-          {project.rolesNeeded && project.rolesNeeded.length > 0 && (
-            <Card className="bg-zinc-900 border-zinc-800 text-white">
-              <CardHeader>
-                <CardTitle>Roles Needed</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-2">
-                {project.rolesNeeded.map((role, index) => (
-                  <Badge
-                    key={`${role}-${index}`}
-                    variant="outline"
-                    className="border-purple-500/50 text-purple-300"
-                  >
-                    {role}
-                  </Badge>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+
           {(isOwner || isMember) && (
             <div className="mt-6">
               <h2 className="text-2xl font-bold tracking-tight text-white mb-4">
@@ -366,11 +425,13 @@ export default function ProjectDetailsPage() {
             </div>
           )}
         </div>
-        {/* Right Column */}
+
+        {/* --- 💥 SAHI RIGHT COLUMN 💥 --- */}
         <div className="lg:col-span-1 space-y-6">
           <Card className="bg-zinc-900 border-zinc-800">
             <CardContent className="pt-6">{renderJoinButton()}</CardContent>
           </Card>
+
           {isOwner &&
             project.joinRequests &&
             project.joinRequests.length > 0 && (
@@ -429,6 +490,7 @@ export default function ProjectDetailsPage() {
                 </CardContent>
               </Card>
             )}
+
           {(project.githubRepo || project.liveUrl) && (
             <Card className="bg-zinc-900 border-zinc-800 text-white">
               <CardHeader>
@@ -458,6 +520,7 @@ export default function ProjectDetailsPage() {
               </CardContent>
             </Card>
           )}
+
           <Card className="bg-zinc-900 border-zinc-800 text-white">
             <CardHeader>
               <CardTitle>Team Members ({project.members.length})</CardTitle>
@@ -485,6 +548,7 @@ export default function ProjectDetailsPage() {
               ))}
             </CardContent>
           </Card>
+
           {isMember && <ProjectChat projectId={project._id} />}
         </div>
       </div>

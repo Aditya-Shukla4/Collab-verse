@@ -1,4 +1,4 @@
-// client/src/pages/DashboardPage.jsx
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
@@ -18,7 +18,6 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 
-// ✅ Ek chota, reusable component khaali state ke liye
 const EmptyState = ({ title, message }) => (
   <div className="text-center py-20 bg-zinc-900/50 rounded-lg border border-zinc-800 w-full">
     <h3 className="text-xl font-semibold text-white">{title}</h3>
@@ -33,9 +32,8 @@ export default function DashboardPage() {
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { query: universalQuery } = useSearchStore(); // Sirf query lo
+  const { query: universalQuery } = useSearchStore();
 
-  // Data fetching logic (yeh theek hai)
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) router.push("/LoginPage");
@@ -43,15 +41,21 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!isAuthenticated || authLoading) return;
+
     const fetchData = async () => {
       setIsLoading(true);
       try {
+        const queryParam = encodeURIComponent(universalQuery?.trim() || "");
+
+        // 💥 FIX IS HERE: URL ko /users se /users/search kar diya 💥
+        const usersUrl = `/users/search?query=${queryParam}`;
+        const projectsUrl = "/projects";
+
         const [usersResponse, projectsResponse] = await Promise.all([
-          api.get(
-            `/users?query=${encodeURIComponent(universalQuery?.trim() || "")}`
-          ),
-          api.get("/projects"),
+          api.get(usersUrl),
+          api.get(projectsUrl),
         ]);
+
         const currentUserId = user?._id;
         setUsers(
           currentUserId
@@ -65,7 +69,8 @@ export default function DashboardPage() {
         setIsLoading(false);
       }
     };
-    const debounceTimer = setTimeout(fetchData, 500);
+
+    const debounceTimer = setTimeout(fetchData, 300);
     return () => clearTimeout(debounceTimer);
   }, [universalQuery, isAuthenticated, authLoading, user]);
 
@@ -75,7 +80,6 @@ export default function DashboardPage() {
     );
   }
 
-  // ❌ Tumhara <main> tag yahan tha, jisse hydration error aa raha tha. Usko hata diya hai.
   return (
     <div>
       <div className="space-y-2 mb-8">
@@ -89,18 +93,22 @@ export default function DashboardPage() {
 
       <Tabs defaultValue="projects" className="w-full">
         <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-zinc-800 p-1 text-zinc-400 max-w-md mx-auto mb-8 w-full">
-          <TabsTrigger value="projects" className="... w-1/2">
+          <TabsTrigger
+            value="projects"
+            className="data-[state=active]:bg-zinc-900 data-[state=active]:text-white w-1/2"
+          >
             Projects
           </TabsTrigger>
-          <TabsTrigger value="developers" className="... w-1/2">
+          <TabsTrigger
+            value="developers"
+            className="data-[state=active]:bg-zinc-900 data-[state=active]:text-white w-1/2"
+          >
             Developers
           </TabsTrigger>
         </TabsList>
 
-        {/* --- PROJECTS TAB CONTENT --- */}
         <TabsContent value="projects">
           <div className="flex justify-center">
-            {/* ✅ YEH HAI ASLI FIX (Part 1) */}
             {projects.length > 0 ? (
               <Carousel
                 opts={{ align: "start", loop: projects.length > 3 }}
@@ -115,7 +123,7 @@ export default function DashboardPage() {
                       <div className="p-1 h-full">
                         <ProjectCard
                           project={project}
-                          isOwner={user?._id === project.createdBy}
+                          isOwner={user?._id === project.createdBy._id}
                         />
                       </div>
                     </CarouselItem>
@@ -133,10 +141,8 @@ export default function DashboardPage() {
           </div>
         </TabsContent>
 
-        {/* --- DEVELOPERS TAB CONTENT --- */}
         <TabsContent value="developers">
           <div className="flex justify-center">
-            {/* ✅ YEH HAI ASLI FIX (Part 2) */}
             {users.length > 0 ? (
               <Carousel
                 opts={{ align: "start", loop: users.length > 3 }}
