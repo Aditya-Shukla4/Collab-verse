@@ -1,6 +1,6 @@
 import User from "../models/user.model.js";
 
-// --- Universal Search Logic ---
+// --- YEH TERA PURANA DASHBOARD SEARCH HAI - NO CHANGE ---
 export const searchUsers = async (req, res) => {
   try {
     const rawQuery = req.query.query;
@@ -16,6 +16,31 @@ export const searchUsers = async (req, res) => {
     res.json(users);
   } catch (error) {
     console.error("Error searching users:", error);
+    res.status(500).json({ message: "Server error while searching users." });
+  }
+};
+
+// --- 💥 YEH NAYA SEARCH FUNCTION HAI SIRF INVITE KE LIYE 💥 ---
+export const searchForInvite = async (req, res) => {
+  try {
+    const keyword = req.query.query
+      ? {
+          $or: [
+            { name: { $regex: req.query.query, $options: "i" } }, // 'i' matlab case-insensitive
+            { email: { $regex: req.query.query, $options: "i" } },
+          ],
+        }
+      : {};
+
+    // Users dhoondo, lekin khud ko results se hata do
+    const users = await User.find(keyword)
+      .find({ _id: { $ne: req.user._id } }) // '$ne' matlab 'not equal to'
+      .limit(10) // Sirf 10 result bhejo, zyada nahi
+      .select("name email avatarUrl"); // Sirf zaroori data bhejo
+
+    res.json(users);
+  } catch (error) {
+    console.error("User invite search error:", error);
     res.status(500).json({ message: "Server error while searching users." });
   }
 };
@@ -109,7 +134,7 @@ export const getMyColleagues = async (req, res) => {
     const user = await User.findById(req.user.id).populate(
       "colleagues",
       "name occupation avatarUrl"
-    ); // Get details for each colleague
+    );
 
     if (!user) {
       return res.status(404).json({ message: "User not found." });
@@ -127,7 +152,7 @@ export const getMyProjectInvites = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate({
       path: "projectInvites",
-      populate: { path: "createdBy", select: "name avatarUrl" }, // Also populate the creator of the project
+      populate: { path: "createdBy", select: "name avatarUrl" },
     });
 
     if (!user) {

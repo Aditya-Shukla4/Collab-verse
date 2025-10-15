@@ -1,5 +1,6 @@
 import User from "../models/user.model.js";
 import mongoose from "mongoose";
+import Collaboration from "../models/collaboration.model.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -130,5 +131,22 @@ export const getReceivedRequests = async (req, res) => {
   } catch (error) {
     console.error("ERROR in getReceivedRequests:", error);
     res.status(500).json({ message: "Server error while fetching requests." });
+  }
+};
+
+export const getPendingInvitations = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const invitations = await Collaboration.find({
+      collaborator: userId,
+      status: "pending",
+    })
+      .populate("project", "title") // Project ka naam bhi saath me bhej do
+      .populate("owner", "name avatarUrl"); // Bhejne wale ka naam aur photo bhi
+
+    res.status(200).json(invitations);
+  } catch (error) {
+    res.status(500).json({ message: "Server error fetching invitations." });
   }
 };

@@ -1,4 +1,5 @@
 // server/index.js (COMPLETE AND CORRECTED FILE)
+// This the dirty comment to make the server dirty
 
 import "dotenv/config";
 import express from "express";

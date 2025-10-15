@@ -1,30 +1,30 @@
-// server/src/routes/user.routes.js
-
 import express from "express";
+import { protect } from "../middleware/auth.middleware.js";
 import {
   getMyProfile,
   updateUserProfile,
   getUserById,
-  searchUsers,
   getMyColleagues,
-  getMyProjectInvites, // Ab yeh use ho raha hai
   getMyNotifications,
+  searchUsers,
+  searchForInvite, // Naya wala import
 } from "../controllers/user.controller.js";
-import { protect } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-// Universal search for users
-router.get("/", protect, searchUsers);
+// 💥 FIX IS HERE: SABSE PEHLE SPECIFIC ROUTES 💥
+// Yeh routes hardcoded text pe depend karte hain, isliye inko upar rakho.
+router.route("/me").get(protect, getMyProfile);
+router.route("/me/colleagues").get(protect, getMyColleagues);
+router.route("/me/notifications").get(protect, getMyNotifications);
+router.route("/search").get(protect, searchUsers); // Tera purana search
+router.route("/search-for-invite").get(protect, searchForInvite); // Naya invite search
 
-// Routes for the logged-in user ('/me')
-router.route("/me").get(protect, getMyProfile).put(protect, updateUserProfile); // Sahi tareeka
+// --- AAKHIR ME DYNAMIC ROUTE ---
+// Yeh route variable (:id) pe depend karta hai, isliye isko sabse neeche rakho.
+router.route("/:id").get(protect, getUserById);
 
-router.get("/me/colleagues", protect, getMyColleagues);
-router.get("/me/notifications", protect, getMyNotifications);
-router.get("/me/invites", protect, getMyProjectInvites); // Naya route
-
-// Route for fetching any user's public profile (MUST be last)
-router.get("/:id", protect, getUserById);
+// Update route - yeh /me/update jaisa bhi ho sakta hai, but for now this works
+router.route("/").put(protect, updateUserProfile);
 
 export default router;

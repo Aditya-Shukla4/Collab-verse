@@ -1,7 +1,8 @@
-// server/src/controllers/project.controller.js
-
 import Project from "../models/project.model.js";
 import User from "../models/user.model.js";
+import Collaboration from "../models/collaboration.model.js";
+
+// --- CORE PROJECT CRUD ---
 
 // 1. Create a new project
 export const createProject = async (req, res) => {
@@ -39,7 +40,7 @@ export const createProject = async (req, res) => {
   }
 };
 
-// 2. Get all projects
+// 2. Get all projects (public listing)
 export const getProjects = async (req, res) => {
   try {
     const projects = await Project.find({})
@@ -76,7 +77,206 @@ export const getProjectById = async (req, res) => {
   }
 };
 
-// 4. Request to join a project
+// 4. Get projects for the logged-in user
+export const getMyProjects = async (req, res) => {
+  try {
+    // Find projects where the user is the creator OR a member
+    const projects = await Project.find({
+      $or: [{ createdBy: req.user.id }, { members: req.user.id }],
+    })
+      .populate("members", "name avatarUrl")
+      .populate("joinRequests", "name avatarUrl")
+      .sort({ createdAt: -1 });
+
+    if (!projects) {
+      return res
+        .status(404)
+        .json({ message: "No projects found for this user." });
+    }
+    res.status(200).json(projects);
+  } catch (error) {
+    console.error("❌ ERROR in getMyProjects:", error);
+    res
+      .status(500)
+      .json({ message: "Server error while fetching user's projects." });
+  }
+};
+
+// 5. Update a project
+export const updateProject = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const userId = req.user.id;
+    const updateData = req.body;
+
+    const updatedProject = await Project.findOneAndUpdate(
+      { _id: projectId, createdBy: userId },
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedProject) {
+      return res.status(404).json({
+        message: "Project not found or you are not authorized to edit it.",
+      });
+    }
+
+    res.status(200).json(updatedProject);
+  } catch (error) {
+    console.error("❌ ERROR in updateProject:", error);
+    res.status(500).json({ message: "Server error while updating project." });
+  }
+};
+
+// 6. Delete a project
+export const deleteProject = async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const userId = req.user.id;
+
+    const project = await Project.findById(projectId);
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found." });
+    }
+    if (!project.createdBy.equals(userId)) {
+      return res.status(403).json({
+        message: "Not authorized. You can only delete your own projects.",
+      });
+    }
+
+    await Project.findByIdAndDelete(projectId);
+
+    // Also delete any pending invitations for this project
+    await Collaboration.deleteMany({ project: projectId });
+
+    res.status(200).json({ message: "Project deleted successfully." });
+  } catch (error) {
+    console.error("❌ ERROR in deleteProject:", error);
+    res.status(500).json({ message: "Server error while deleting project." });
+  }
+};
+
+// --- INVITATION & COLLABORATION LOGIC (Using Collaboration Model) ---
+
+// 7. Invite a user to a project by email
+export const inviteToProject = async (req, res) => {
+  try {
+    const { id: projectId } = req.params;
+    const ownerId = req.user.id;
+    const { collaboratorEmail } = req.body;
+
+    if (!collaboratorEmail) {
+      return res
+        .status(400)
+        .json({ message: "Please provide an email to invite." });
+    }
+    const project = await Project.findById(projectId);
+    if (!project || project.createdBy.toString() !== ownerId) {
+      return res
+        .status(404)
+        .json({ message: "Project not found or you are not the owner." });
+    }
+    const userToInvite = await User.findOne({ email: collaboratorEmail });
+    if (!userToInvite) {
+      return res
+        .status(404)
+        .json({ message: "User with that email not found." });
+    }
+    if (ownerId === userToInvite._id.toString()) {
+      return res.status(400).json({ message: "You cannot invite yourself." });
+    }
+    const existingCollab = await Collaboration.findOne({
+      project: projectId,
+      collaborator: userToInvite._id,
+    });
+    if (existingCollab) {
+      return res
+        .status(400)
+        .json({ message: `User has already been invited or is a member.` });
+    }
+    const newCollaboration = new Collaboration({
+      project: projectId,
+      collaborator: userToInvite._id,
+      owner: ownerId,
+      status: "pending",
+    });
+    await newCollaboration.save();
+    res.status(201).json({ message: "User invited successfully." });
+  } catch (error) {
+    console.error("Invite Error:", error);
+    res.status(500).json({ message: "Server error while sending invite." });
+  }
+};
+
+// 8. Accept a project invitation
+export const acceptProjectInvite = async (req, res) => {
+  // 💥 SPY MESSAGE 💥
+  console.log(
+    "--- TRYING TO ACCEPT INVITE - Controller function was reached! ---"
+  );
+
+  try {
+    const collaborationId = req.params.id;
+    const userId = req.user.id;
+
+    const collab = await Collaboration.findById(collaborationId);
+
+    if (!collab || collab.collaborator.toString() !== userId) {
+      return res
+        .status(404)
+        .json({ message: "Invitation not found or not for you." });
+    }
+    if (collab.status !== "pending") {
+      return res
+        .status(400)
+        .json({
+          message: `This invitation has already been ${collab.status}.`,
+        });
+    }
+
+    collab.status = "accepted";
+    await collab.save();
+
+    await Project.findByIdAndUpdate(collab.project, {
+      $addToSet: { members: userId },
+    });
+
+    res
+      .status(200)
+      .json({ message: "Invitation accepted. You are now a collaborator." });
+  } catch (error) {
+    console.error("Accept Invite Error:", error);
+    res.status(500).json({ message: "Server error while accepting invite." });
+  }
+};
+
+// 9. Reject a project invitation
+export const rejectProjectInvite = async (req, res) => {
+  try {
+    const collaborationId = req.params.id;
+    const userId = req.user.id;
+
+    const result = await Collaboration.findOneAndDelete({
+      _id: collaborationId,
+      collaborator: userId,
+    });
+
+    if (!result) {
+      return res
+        .status(404)
+        .json({ message: "Invitation not found or not for you." });
+    }
+
+    res.status(200).json({ message: "Invitation rejected." });
+  } catch (error) {
+    res.status(500).json({ message: "Server error while rejecting invite." });
+  }
+};
+
+// --- JOIN REQUEST LOGIC (Separate from Invites) ---
+
+// 10. Request to join a project
 export const requestToJoinProject = async (req, res) => {
   try {
     const projectId = req.params.id;
@@ -114,7 +314,7 @@ export const requestToJoinProject = async (req, res) => {
   }
 };
 
-// 5. Accept a user's request to join
+// 11. Accept a user's request to join
 export const acceptJoinRequest = async (req, res) => {
   try {
     const { id: projectId, userId: applicantId } = req.params;
@@ -145,7 +345,7 @@ export const acceptJoinRequest = async (req, res) => {
   }
 };
 
-// 6. Reject a user's request to join
+// 12. Reject a user's request to join
 export const rejectJoinRequest = async (req, res) => {
   try {
     const { id: projectId, userId: applicantId } = req.params;
@@ -165,177 +365,5 @@ export const rejectJoinRequest = async (req, res) => {
   } catch (error) {
     console.error("ERROR in rejectJoinRequest:", error);
     res.status(500).json({ message: "Server error while rejecting request." });
-  }
-};
-
-export const getMyProjects = async (req, res) => {
-  try {
-    // This is the main logic: Find projects where 'createdBy' matches the logged-in user's ID
-    const projects = await Project.find({ createdBy: req.user.id })
-      .populate("members", "name avatarUrl")
-      .populate("joinRequests", "name avatarUrl")
-      .sort({ createdAt: -1 });
-
-    if (!projects) {
-      return res
-        .status(404)
-        .json({ message: "No projects found for this user." });
-    }
-
-    res.status(200).json(projects);
-  } catch (error) {
-    console.error("❌ ERROR in getMyProjects:", error);
-    res
-      .status(500)
-      .json({ message: "Server error while fetching user's projects." });
-  }
-};
-
-export const deleteProject = async (req, res) => {
-  try {
-    const projectId = req.params.id;
-    const userId = req.user.id;
-
-    const project = await Project.findById(projectId);
-
-    if (!project) {
-      return res.status(404).json({ message: "Project not found." });
-    }
-
-    // --- CRITICAL SECURITY CHECK ---
-    // Make sure only the user who created the project can delete it.
-    if (!project.createdBy.equals(userId)) {
-      return res.status(403).json({
-        message: "Not authorized. You can only delete your own projects.",
-      });
-    }
-
-    await Project.findByIdAndDelete(projectId);
-
-    res.status(200).json({ message: "Project deleted successfully." });
-  } catch (error) {
-    console.error("❌ ERROR in deleteProject:", error);
-    res.status(500).json({ message: "Server error while deleting project." });
-  }
-};
-
-export const updateProject = async (req, res) => {
-  try {
-    const projectId = req.params.id;
-    const userId = req.user.id;
-    const updateData = req.body;
-
-    // Find the project and update it in one step.
-    // The query { _id: projectId, createdBy: userId } ensures that a user can only update a project they created.
-    const updatedProject = await Project.findOneAndUpdate(
-      { _id: projectId, createdBy: userId },
-      updateData,
-      { new: true, runValidators: true } // Return the updated document and run schema validators
-    );
-
-    if (!updatedProject) {
-      return res.status(404).json({
-        message: "Project not found or you are not authorized to edit it.",
-      });
-    }
-
-    res.status(200).json(updatedProject);
-  } catch (error) {
-    console.error("❌ ERROR in updateProject:", error);
-    res.status(500).json({ message: "Server error while updating project." });
-  }
-};
-
-export const inviteToProject = async (req, res) => {
-  try {
-    const { id: projectId, userId: invitedUserId } = req.params;
-    const invitingUserId = req.user.id;
-
-    const project = await Project.findById(projectId);
-    const invitedUser = await User.findById(invitedUserId);
-
-    if (!project || !invitedUser) {
-      return res.status(404).json({ message: "Project or user not found." });
-    }
-
-    // --- Validation Checks ---
-    if (!project.members.includes(invitingUserId)) {
-      return res
-        .status(403)
-        .json({ message: "Only project members can send invites." });
-    }
-    if (project.members.includes(invitedUserId)) {
-      return res
-        .status(400)
-        .json({ message: "User is already a member of this project." });
-    }
-    if (invitedUser.projectInvites.includes(projectId)) {
-      return res
-        .status(400)
-        .json({ message: "User has already been invited to this project." });
-    }
-
-    invitedUser.projectInvites.addToSet(projectId);
-    await invitedUser.save();
-
-    res
-      .status(200)
-      .json({ message: `Invitation sent to ${invitedUser.name}.` });
-  } catch (error) {
-    console.error("ERROR in inviteToProject:", error);
-    res.status(500).json({ message: "Server error while sending invitation." });
-  }
-};
-
-// @desc    Accept a project invitation
-// @route   PUT /api/projects/accept-invite/:id
-// @access  Private
-export const acceptProjectInvite = async (req, res) => {
-  try {
-    const projectId = req.params.id;
-    const userId = req.user.id;
-
-    // Remove invite from user's list and add user to project's member list
-    const [user, project] = await Promise.all([
-      User.findByIdAndUpdate(userId, { $pull: { projectInvites: projectId } }),
-      Project.findByIdAndUpdate(projectId, { $addToSet: { members: userId } }),
-    ]);
-
-    if (!user || !project) {
-      return res.status(404).json({ message: "Project or user not found." });
-    }
-
-    res
-      .status(200)
-      .json({
-        message: `You have successfully joined the project: ${project.title}.`,
-      });
-  } catch (error) {
-    console.error("ERROR in acceptProjectInvite:", error);
-    res.status(500).json({ message: "Server error while accepting invite." });
-  }
-};
-
-// @desc    Reject a project invitation
-// @route   DELETE /api/projects/reject-invite/:id
-// @access  Private
-export const rejectProjectInvite = async (req, res) => {
-  try {
-    const projectId = req.params.id;
-    const userId = req.user.id;
-
-    // Simply remove the project ID from the user's invites list
-    const user = await User.findByIdAndUpdate(userId, {
-      $pull: { projectInvites: projectId },
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
-    }
-
-    res.status(200).json({ message: "Project invitation rejected." });
-  } catch (error) {
-    console.error("ERROR in rejectProjectInvite:", error);
-    res.status(500).json({ message: "Server error while rejecting invite." });
   }
 };
