@@ -16,9 +16,24 @@ export const AuthProvider = ({ children }) => {
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       try {
         const { data } = await api.get("/users/me");
-        // Create a new object reference to guarantee a re-render
-        setUser({ ...data });
-        return data;
+
+        // FIX: Ensure these arrays always exist
+        const userData = {
+          ...data,
+          receivedCollabRequests: Array.isArray(data.receivedCollabRequests)
+            ? data.receivedCollabRequests
+            : [],
+          projectInvites: Array.isArray(data.projectInvites)
+            ? data.projectInvites
+            : [],
+          sentCollabRequests: Array.isArray(data.sentCollabRequests)
+            ? data.sentCollabRequests
+            : [],
+          colleagues: Array.isArray(data.colleagues) ? data.colleagues : [],
+        };
+
+        setUser(userData);
+        return userData;
       } catch (error) {
         console.error("Auth fetch failed:", error);
         logout();

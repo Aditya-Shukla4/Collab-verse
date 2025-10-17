@@ -21,6 +21,15 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
   if (!user) return null;
 
+  // FIX: Safely handle arrays with fallbacks
+  const receivedRequests = Array.isArray(user.receivedCollabRequests)
+    ? user.receivedCollabRequests.length
+    : 0;
+  const projectInvites = Array.isArray(user.projectInvites)
+    ? user.projectInvites.length
+    : 0;
+  const totalCount = receivedRequests + projectInvites;
+
   const navLinks = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/my-projects", label: "My Projects", icon: FolderKanban },
@@ -28,9 +37,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
       href: "/requests",
       label: "Requests",
       icon: Inbox,
-      count:
-        (user.receivedCollabRequests?.length || 0) +
-        (user.projectInvites?.length || 0),
+      count: totalCount,
     },
     { href: `/profile/${user._id}`, label: "My Profile", icon: User },
   ];
