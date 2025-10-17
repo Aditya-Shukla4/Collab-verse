@@ -32,17 +32,25 @@ app.use(express.json());
 app.use(express.urlencoded({ limit: "10mb" }));
 app.use(passport.initialize());
 
+// 🔧 FIX: Disable caching for ALL API responses
+app.use("/api", (req, res, next) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+  next();
+});
+
+// --- Health Check Route (before API routes) ---
+app.get("/health", (req, res) => {
+  res.status(200).json({ message: "Server is running" });
+});
+
 // --- API Routes ---
 app.use("/api/users", userRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/collabs", collabRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/search", searchRoutes);
-
-// --- Health Check Route ---
-app.get("/health", (req, res) => {
-  res.status(200).json({ message: "Server is running" });
-});
 
 // --- HTTP and Socket.IO Server Setup ---
 const httpServer = createServer(app);
@@ -120,7 +128,6 @@ io.on("connection", (socket) => {
         `✅ Code saved for project ${projectId} (Language: ${language})`
       );
 
-      // Notify all users in the room
       io.in(projectId).emit("code_saved_success", {
         message: "Code saved successfully",
       });
@@ -140,7 +147,6 @@ io.on("connection", (socket) => {
           const usersInRoom = Array.from(activeUsersByRoom[projectId].values());
           io.in(projectId).emit("room_users_update", usersInRoom);
 
-          // Clean up empty rooms
           if (activeUsersByRoom[projectId].size === 0) {
             delete activeUsersByRoom[projectId];
           }
@@ -152,7 +158,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Handle socket errors
   socket.on("error", (error) => {
     console.error(`Socket error for ${socket.id}:`, error);
   });
