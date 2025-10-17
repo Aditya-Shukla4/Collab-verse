@@ -34,6 +34,7 @@ export default function MyProjectsPage() {
         api.get("/projects/my-projects"),
         api.get("/collabs/invitations/pending"),
       ]);
+      // 💥 FIX: Agar data na aaye, toh khaali array set karo
       setProjects(projectsResponse.data || []);
       setInvitations(invitesResponse.data || []);
     } catch (err) {
@@ -67,7 +68,7 @@ export default function MyProjectsPage() {
       toast.success("Invitation accepted! Project added to your list.", {
         id: toastId,
       });
-      fetchAllData();
+      fetchAllData(); // Re-fetch everything
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to accept.", {
         id: toastId,
@@ -99,12 +100,15 @@ export default function MyProjectsPage() {
     return <div className="text-center text-red-500 py-20">{error}</div>;
   }
 
-  const ownedProjects = loggedInUser
-    ? projects.filter((p) => p.createdBy?._id === loggedInUser._id)
-    : [];
-  const sharedProjects = loggedInUser
-    ? projects.filter((p) => p.createdBy?._id !== loggedInUser._id)
-    : [];
+  // 💥 FIX: Filter karne se pehle check karo ki data hai ya nahi
+  const ownedProjects =
+    loggedInUser && Array.isArray(projects)
+      ? projects.filter((p) => p.createdBy?._id === loggedInUser._id)
+      : [];
+  const sharedProjects =
+    loggedInUser && Array.isArray(projects)
+      ? projects.filter((p) => p.createdBy?._id !== loggedInUser._id)
+      : [];
 
   return (
     <main>
@@ -128,6 +132,7 @@ export default function MyProjectsPage() {
         </Button>
       </div>
 
+      {/* --- INVITATIONS SECTION --- */}
       {invitations?.length > 0 && (
         <div className="mb-12">
           <h2 className="text-2xl font-bold tracking-tight text-white mb-4 flex items-center">
@@ -188,6 +193,7 @@ export default function MyProjectsPage() {
         </div>
       )}
 
+      {/* --- OWNED PROJECTS SECTION --- */}
       <div className="mb-12">
         <h2 className="text-2xl font-bold tracking-tight text-white mb-4">
           My Created Projects
@@ -216,6 +222,7 @@ export default function MyProjectsPage() {
         )}
       </div>
 
+      {/* --- SHARED PROJECTS SECTION --- */}
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-white mb-4 flex items-center">
           <Share2 className="mr-3 h-6 w-6 text-purple-400" /> Projects Shared
