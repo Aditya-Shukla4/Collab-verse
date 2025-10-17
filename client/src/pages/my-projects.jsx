@@ -34,7 +34,7 @@ export default function MyProjectsPage() {
         api.get("/projects/my-projects"),
         api.get("/collabs/invitations/pending"),
       ]);
-      // 💥 FIX: Agar data na aaye, toh khaali array set karo
+      // 💥 ASLI FIX YAHAN HAI: Agar data na aaye, toh khaali array set karo
       setProjects(projectsResponse.data || []);
       setInvitations(invitesResponse.data || []);
     } catch (err) {
@@ -100,7 +100,7 @@ export default function MyProjectsPage() {
     return <div className="text-center text-red-500 py-20">{error}</div>;
   }
 
-  // 💥 FIX: Filter karne se pehle check karo ki data hai ya nahi
+  // 💥 ASLI FIX #2: Filter karne se pehle check karo ki data hai ya nahi
   const ownedProjects =
     loggedInUser && Array.isArray(projects)
       ? projects.filter((p) => p.createdBy?._id === loggedInUser._id)
@@ -133,6 +133,7 @@ export default function MyProjectsPage() {
       </div>
 
       {/* --- INVITATIONS SECTION --- */}
+      {/* 💥 FIX #3: Optional chaining (?) zaroori hai */}
       {invitations?.length > 0 && (
         <div className="mb-12">
           <h2 className="text-2xl font-bold tracking-tight text-white mb-4 flex items-center">
