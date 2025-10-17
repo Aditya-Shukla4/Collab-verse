@@ -35,10 +35,24 @@ export default function RequestsPage() {
       setIsLoading(true);
       try {
         const response = await api.get("/users/me/notifications");
-        setColleagueRequests(response.data.colleagueRequests);
-        setProjectInvites(response.data.projectInvites);
+
+        // FIX: Safely handle response with default values
+        const colleagues = Array.isArray(response.data?.colleagueRequests)
+          ? response.data.colleagueRequests
+          : [];
+        const invites = Array.isArray(response.data?.projectInvites)
+          ? response.data.projectInvites
+          : [];
+
+        console.log("Colleague requests:", colleagues.length);
+        console.log("Project invites:", invites.length);
+
+        setColleagueRequests(colleagues);
+        setProjectInvites(invites);
       } catch (err) {
         console.error("Failed to fetch notifications:", err);
+        setColleagueRequests([]);
+        setProjectInvites([]);
       } finally {
         setIsLoading(false);
       }
@@ -49,47 +63,53 @@ export default function RequestsPage() {
   // --- Handlers for Colleague Requests ---
   const handleAcceptColleague = async (senderId) => {
     try {
-      await api.put(`/collabs/accept-request/${senderId}`);
+      await api.put(`/collabs/requests/${senderId}/accept`);
       setColleagueRequests((current) =>
         current.filter((req) => req._id !== senderId)
       );
-      await refetchUser(); // Sync user state
+      await refetchUser();
     } catch (error) {
+      console.error("Error accepting colleague request:", error);
       alert("Error accepting request.");
     }
   };
 
   const handleRejectColleague = async (senderId) => {
     try {
-      await api.delete(`/collabs/reject-request/${senderId}`);
+      await api.delete(`/collabs/requests/${senderId}/reject`);
       setColleagueRequests((current) =>
         current.filter((req) => req._id !== senderId)
       );
       await refetchUser();
     } catch (error) {
+      console.error("Error rejecting colleague request:", error);
       alert("Error rejecting request.");
     }
   };
 
   // --- Handlers for Project Invites ---
-  const handleAcceptInvite = async (projectId) => {
+  const handleAcceptInvite = async (invitationId) => {
     try {
-      await api.put(`/projects/accept-invite/${projectId}`);
+      await api.put(`/collabs/invitations/${invitationId}/accept`);
       setProjectInvites((current) =>
-        current.filter((inv) => inv._id !== projectId)
+        current.filter((inv) => inv._id !== invitationId)
       );
+      await refetchUser();
     } catch (error) {
+      console.error("Error accepting project invite:", error);
       alert("Failed to accept invite.");
     }
   };
 
-  const handleRejectInvite = async (projectId) => {
+  const handleRejectInvite = async (invitationId) => {
     try {
-      await api.delete(`/projects/reject-invite/${projectId}`);
+      await api.delete(`/collabs/invitations/${invitationId}/reject`);
       setProjectInvites((current) =>
-        current.filter((inv) => inv._id !== projectId)
+        current.filter((inv) => inv._id !== invitationId)
       );
+      await refetchUser();
     } catch (error) {
+      console.error("Error rejecting project invite:", error);
       alert("Failed to reject invite.");
     }
   };
@@ -111,8 +131,7 @@ export default function RequestsPage() {
         </p>
       </div>
 
-      {(colleagueRequests || []).length === 0 &&
-      (projectInvites || []).length === 0 ? (
+      {colleagueRequests.length === 0 && projectInvites.length === 0 ? (
         <div className="text-center py-20 bg-black/20 rounded-lg">
           <Inbox className="mx-auto h-12 w-12 text-slate-500" />
           <h3 className="mt-4 text-lg font-medium text-white">
@@ -124,7 +143,7 @@ export default function RequestsPage() {
           {projectInvites.length > 0 && (
             <div>
               <h2 className="text-2xl font-bold tracking-tight text-white mb-6">
-                Project Invitations
+                Project Invitations ({projectInvites.length})
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {projectInvites.map((invite) => (
@@ -133,9 +152,11 @@ export default function RequestsPage() {
                     className="bg-zinc-900 border-purple-500/50"
                   >
                     <CardHeader>
-                      <CardTitle>{invite.title}</CardTitle>
+                      <CardTitle>
+                        {invite.project?.title || "Untitled"}
+                      </CardTitle>
                       <CardDescription>
-                        Invitation from {invite.createdBy.name}
+                        Invitation from {invite.owner?.name || "Unknown"}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="flex gap-4">
@@ -150,7 +171,7 @@ export default function RequestsPage() {
                         variant="destructive"
                         className="w-full"
                       >
-                        <X className="mr-2 h-4 w-4 flex flex-col" /> Reject
+                        <X className="mr-2 h-4 w-4" /> Reject
                       </Button>
                     </CardContent>
                   </Card>
@@ -162,7 +183,7 @@ export default function RequestsPage() {
           {colleagueRequests.length > 0 && (
             <div>
               <h2 className="text-2xl font-bold tracking-tight text-white mb-6">
-                Colleague Requests
+                Colleague Requests ({colleagueRequests.length})
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {colleagueRequests.map((sender) => (

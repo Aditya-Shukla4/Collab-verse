@@ -54,6 +54,7 @@ export default function MyProjectsPage() {
 
       console.log("✅ Projects fetched:", projectsData);
       console.log("✅ Invitations fetched:", invitationsData);
+      console.log("API URL being used:", process.env.NEXT_PUBLIC_API_URL);
 
       setProjects(Array.isArray(projectsData) ? projectsData : []);
       setInvitations(Array.isArray(invitationsData) ? invitationsData : []);

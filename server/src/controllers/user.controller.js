@@ -1,4 +1,5 @@
 import User from "../models/user.model.js";
+import Collaboration from "../models/collaboration.model.js";
 
 // --- DASHBOARD SEARCH ($text based) ---
 export const searchUsers = async (req, res) => {
@@ -120,17 +121,28 @@ export const getMyNotifications = async (req, res) => {
       path: "receivedCollabRequests",
       select: "name occupation avatarUrl skills",
     });
+
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
-    // 🔧 FIX: Ensure receivedCollabRequests is always an array
+
+    // Also fetch pending project invitations
+    const invitations = await Collaboration.find({
+      collaborator: req.user.id,
+      status: "pending",
+    })
+      .populate("project", "title")
+      .populate("owner", "name avatarUrl");
+
     res.status(200).json({
       colleagueRequests: user.receivedCollabRequests || [],
+      projectInvites: invitations || [],
     });
   } catch (error) {
-    console.error("Error fetching notifications:", error);
-    res
-      .status(500)
-      .json({ message: "Server error while fetching notifications." });
+    console.error("ERROR in getMyNotifications:", error);
+    res.status(200).json({
+      colleagueRequests: [],
+      projectInvites: [],
+    });
   }
 };
