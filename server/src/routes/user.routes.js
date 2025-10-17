@@ -7,24 +7,30 @@ import {
   getMyColleagues,
   getMyNotifications,
   searchUsers,
-  searchForInvite, // Naya wala import
+  searchForInvite,
 } from "../controllers/user.controller.js";
 
 const router = express.Router();
 
-// 💥 FIX IS HERE: SABSE PEHLE SPECIFIC ROUTES 💥
-// Yeh routes hardcoded text pe depend karte hain, isliye inko upar rakho.
+// ----------------------------------------------------------------
+// 💥 ASLI FIX YAHAN HAI: ROUTES KA SAHI ORDER 💥
+// Express upar se neeche check karta hai. Isliye, hamesha specific
+// text-wale routes (jaise '/me', '/search') ko dynamic, variable
+// wale routes (jaise '/:id') se UPAR rakhte hain.
+// ----------------------------------------------------------------
+
+// --- SPECIFIC ROUTES FIRST ---
+// Yeh routes hardcoded text pe depend karte hain.
 router.route("/me").get(protect, getMyProfile);
+router.route("/me").put(protect, updateUserProfile); // Update route is now also specific to /me
 router.route("/me/colleagues").get(protect, getMyColleagues);
 router.route("/me/notifications").get(protect, getMyNotifications);
-router.route("/search").get(protect, searchUsers); // Tera purana search
+router.route("/search").get(protect, searchUsers); // Tera purana dashboard search
 router.route("/search-for-invite").get(protect, searchForInvite); // Naya invite search
 
-// --- AAKHIR ME DYNAMIC ROUTE ---
-// Yeh route variable (:id) pe depend karta hai, isliye isko sabse neeche rakho.
+// --- DYNAMIC ROUTE LAST ---
+// Yeh route variable (`:id`) pe depend karta hai. Isko sabse neeche rakho.
+// Agar isko upar rakha, toh yeh '/me' ko ek ID samajh lega aur galat function chala dega.
 router.route("/:id").get(protect, getUserById);
-
-// Update route - yeh /me/update jaisa bhi ho sakta hai, but for now this works
-router.route("/").put(protect, updateUserProfile);
 
 export default router;

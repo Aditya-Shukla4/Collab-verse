@@ -1,67 +1,58 @@
-// compiler-service/index.js
-
 import express from "express";
 import cors from "cors";
-// CRITICAL IMPORT: Ensure both functions are imported
+import { createServer } from "http";
+import { Server } from "socket.io";
 import {
-  runPython,
-  runCpp,
-  runC,
-  runJava,
-  runGo,
-  runPhp,
-  runRust,
-} from "./executionService.js";
+  createTerminal,
+  writeToTerminal,
+  killTerminalOnDisconnect,
+} from "./terminalService.js";
 
 const app = express();
-// Use a different port than the main server (e.g., 6000)
-const PORT = 6000;
+const PORT = process.env.PORT || 6001; // Using the safe port
 
 // Middleware
-app.use(express.json());
-app.use(cors());
+app.use(cors()); // Basic CORS for HTTP health checks if needed
 
-// 🚀 CRITICAL API ENDPOINT 🚀
-// compiler-service/index.js
-
-app.post("/api/run", async (req, res) => {
-  const { code, input, language } = req.body;
-
-  if (!code || !language) {
-    return res
-      .status(400)
-      .json({ error: "Missing code or language parameter." });
-  }
-
-  let executionResult;
-  try {
-    if (language === "python") {
-      executionResult = await runPython(code, input);
-    } else if (language === "c") {
-      executionResult = await runC(code, input);
-    } else if (language === "cpp") {
-      executionResult = await runCpp(code, input);
-    } else if (language === "java") {
-      executionResult = await runJava(code, input);
-    } else if (language === "go") {
-      executionResult = await runGo(code, input);
-    } else if (language === "php") {
-      executionResult = await runPhp(code, input);
-    } else if (language === "rust") {
-      executionResult = await runRust(code, input);
-    } else {
-      executionResult = {
-        error: `Unsupported language: ${language.toUpperCase()}`,
-      };
-    }
-    return res.json(executionResult);
-  } catch (err) {
-    console.error(`Compiler API Error for ${language}:`, err);
-    return res
-      .status(500)
-      .json({ error: "Internal compiler error occurred during execution." });
-  }
+// --- HTTP SERVER and WEBSOCKET SERVER ---
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*", // Allows connection from any origin
+    methods: ["GET", "POST"],
+  },
 });
-app.listen(PORT, () => {
-  console.log(`[MICROSERVICE] Compiler running on port ${PORT}`);
+
+// --- SOCKET.IO LOGIC FOR TERMINAL ---
+io.on("connection", (socket) => {
+  console.log(`🔌 New TERMINAL client connected: ${socket.id}`);
+
+  socket.on("terminal:join", (projectId) => {
+    console.log(
+      `🔗 Client ${socket.id} requested terminal for room: ${projectId}`
+    );
+    socket.join(projectId);
+    createTerminal(projectId, io);
+  });
+
+  socket.on("terminal:write", ({ projectId, data }) => {
+    writeToTerminal(projectId, data);
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`🔌 TERMINAL client disconnected: ${socket.id}`);
+    killTerminalOnDisconnect(socket, io);
+  });
+});
+
+// A simple health check route to verify the server is running
+app.get("/", (req, res) => {
+  res.send("Compiler & Terminal Service is running.");
+});
+
+// Start listening on the httpServer which includes both Express and Socket.IO
+httpServer.listen(PORT, () => {
+  console.log(
+    `[MICROSERVICE] Compiler & Terminal Service running on port ${PORT}`
+  );
 });

@@ -1,18 +1,41 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
 import api from "@/api/axios";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import toast, { Toaster } from "react-hot-toast";
+
+// Components
 import ProjectChat from "@/components/projects/ProjectChat";
 import CodeEditor from "@/components/projects/CodeEditor";
 
-// UI Components
+// Dynamic import for client-side only components
+const ProjectTerminal = dynamic(
+  () => import("@/components/projects/ProjectTerminal"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="p-4 text-gray-400 bg-zinc-900 rounded-lg h-full flex items-center justify-center">
+        Loading Terminal...
+      </div>
+    ),
+  }
+);
+
+// UI
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
 import {
   Dialog,
   DialogContent,
@@ -20,8 +43,10 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Github,
   ExternalLink,
@@ -32,6 +57,7 @@ import {
   X,
   UserPlus,
   Search,
+  TerminalSquare,
 } from "lucide-react";
 
 export default function ProjectDetailsPage() {
@@ -57,6 +83,9 @@ export default function ProjectDetailsPage() {
   // Join request states
   const [joinStatus, setJoinStatus] = useState("loading");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // State to hold the function that runs commands in the terminal
+  const [runInTerminal, setRunInTerminal] = useState(null);
 
   // Fetch project data
   const fetchProject = async () => {
@@ -101,14 +130,13 @@ export default function ProjectDetailsPage() {
     }
   }, [project, loggedInUser]);
 
-  // --- Presence (Active Users) Logic ---
+  // Presence (Active Users) Logic
   useEffect(() => {
     if (socket && project && loggedInUser) {
       const handleUpdate = (users) => {
         setActiveCollaborators(users);
       };
       socket.on("room_users_update", handleUpdate);
-
       socket.emit("join_project_room", {
         projectId: id,
         user: {
@@ -117,14 +145,13 @@ export default function ProjectDetailsPage() {
           avatarUrl: loggedInUser.avatarUrl,
         },
       });
-
       return () => {
         socket.off("room_users_update", handleUpdate);
       };
     }
   }, [socket, id, project, loggedInUser]);
 
-  // --- Search & Invite Logic ---
+  // Search & Invite Logic
   useEffect(() => {
     if (searchQuery.trim().length < 2) {
       setSearchResults([]);
@@ -164,7 +191,7 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  // --- Join Request Handlers ---
+  // Join Request Handlers
   const handleRequestToJoin = async () => {
     setIsSubmitting(true);
     try {
@@ -414,19 +441,31 @@ export default function ProjectDetailsPage() {
               <h2 className="text-2xl font-bold tracking-tight text-white mb-4">
                 Live Workspace
               </h2>
-              <div className="border border-zinc-700 rounded-lg overflow-hidden">
-                <CodeEditor
-                  value={code}
-                  onChange={setCode}
-                  projectId={project._id}
-                  projectData={project}
-                />
-              </div>
+              <ResizablePanelGroup
+                direction="vertical"
+                className="min-h-[80vh] w-full rounded-lg border border-zinc-700 bg-zinc-950"
+              >
+                <ResizablePanel defaultSize={65}>
+                  <CodeEditor
+                    value={code}
+                    onChange={setCode}
+                    projectId={project._id}
+                    projectData={project}
+                    onRunCommand={runInTerminal}
+                  />
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={35}>
+                  <ProjectTerminal
+                    projectId={project._id}
+                    setTerminalRunner={setRunInTerminal}
+                  />
+                </ResizablePanel>
+              </ResizablePanelGroup>
             </div>
           )}
         </div>
 
-        {/* --- 💥 SAHI RIGHT COLUMN 💥 --- */}
         <div className="lg:col-span-1 space-y-6">
           <Card className="bg-zinc-900 border-zinc-800">
             <CardContent className="pt-6">{renderJoinButton()}</CardContent>

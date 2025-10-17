@@ -1,14 +1,10 @@
-# Dockerfile
+# compiler-service/Dockerfile
 
-# Stage 1: Base image with Node.js
-FROM node:20-slim AS base
+FROM node:20-slim
 
-# Stage 2: Builder - Install all compilers
-FROM base AS builder
-# Set working directory inside the container
 WORKDIR /usr/src/app
 
-# Install dependencies (Python, C/C++, Java JDK, and Go)
+# Install all necessary dependencies for compilers AND for node-pty
 RUN apt-get update && apt-get install -y \
     python3 \
     gcc \
@@ -17,14 +13,20 @@ RUN apt-get update && apt-get install -y \
     golang \
     php-cli \
     rustc \
+    make \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy package files and install Node dependencies
+# Copy package files first
 COPY package*.json ./
-RUN npm install --only=production
 
-# Copy the rest of the application files
+# Install dependencies. This will now correctly build node-pty inside the container
+RUN npm install
+
+# Copy the rest of your application code
 COPY . .
 
-# Command to run the node server
+# Expose the port
+EXPOSE 6001
+
 CMD ["node", "index.js"]

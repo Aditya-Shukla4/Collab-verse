@@ -1,6 +1,3 @@
-// server/index.js (COMPLETE AND CORRECTED FILE)
-// This the dirty comment to make the server dirty
-
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
@@ -8,19 +5,15 @@ import mongoose from "mongoose";
 import passport from "passport";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import axios from "axios";
 
-// Assuming you have this local executor for JavaScript
-import { executeCode } from "./src/services/compilerService.js";
-
-// Import your routes
+// Route Imports
 import userRoutes from "./src/routes/user.routes.js";
 import projectRoutes from "./src/routes/project.routes.js";
 import collabRoutes from "./src/routes/collab.routes.js";
 import authRoutes from "./src/routes/auth.routes.js";
+import searchRoutes from "./src/routes/search.routes.js";
 import Project from "./src/models/project.model.js";
 import "./src/config/passport.js";
-import searchRoutes from "./src/routes/search.routes.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -29,13 +22,9 @@ const clientURL = process.env.CLIENT_URL || "http://localhost:3000";
 console.log(`CORS Allowed Origin: ${clientURL}`);
 
 // --- MIDDLEWARE ---
-// This single cors setup is cleaner
 app.use(
   cors({
-    origin: [
-      clientURL,
-      "https://collab-verse.vercel.app", // Keep this for production
-    ],
+    origin: [clientURL, "https://collab-verse.vercel.app"],
     credentials: true,
   })
 );
@@ -64,22 +53,15 @@ io.on("connection", (socket) => {
   console.log(`🔌 New client connected: ${socket.id}`);
 
   socket.on("join_project_room", ({ projectId, user }) => {
-    if (!user) return; // Agar user ki info nahi hai toh kuch mat kar
-
+    if (!user) return;
     socket.join(projectId);
     console.log(
       `👍 Client ${socket.id} (${user.name}) joined room: ${projectId}`
     );
-
-    // Agar room pehli baar ban raha hai
     if (!activeUsersByRoom[projectId]) {
       activeUsersByRoom[projectId] = new Map();
     }
-
-    // User ko active list me add karo (socket.id ko key banao)
     activeUsersByRoom[projectId].set(socket.id, user);
-
-    // Poore room ko active users ki updated list (Array form me) bhejo
     const usersInRoom = Array.from(activeUsersByRoom[projectId].values());
     io.in(projectId).emit("room_users_update", usersInRoom);
   });
@@ -102,75 +84,40 @@ io.on("connection", (socket) => {
         `✅ Code and language ('${language}') saved for project: ${projectId}`
       );
     } catch (error) {
-      console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-      console.error("!!!!!!!!! ERROR SAVING CODE TO DB !!!!!!!");
-      console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-      console.error(error);
+      console.error("Error saving code to DB:", error);
     }
   });
 
-  // MULTI-LANGUAGE COMPILER HANDLER
-  socket.on("execute_code", async ({ projectId, code, input, language }) => {
-    console.log(
-      `[COMPILER RELAY] Received code for ${language} in project ${projectId}`
-    );
-    let executionResult;
-
-    try {
-      if (language === "javascript") {
-        executionResult = executeCode(code, input);
-      } else {
-        const microserviceUrl = `${process.env.COMPILER_API_URL}/api/run`;
-        const response = await axios.post(microserviceUrl, {
-          code,
-          input,
-          language,
-        });
-        executionResult = response.data;
-      }
-      socket.emit("code_execution_result", executionResult);
-    } catch (error) {
-      const errorMessage = error.response
-        ? error.response.data.error ||
-          `Microservice Error (${error.response.status})`
-        : `Network Error: Could not reach compiler service. Is it running on port 6000?`;
-      socket.emit("code_execution_result", { error: errorMessage });
-      console.error("Microservice relay failed:", errorMessage);
-    }
-  }); // <-- THIS WAS THE MISSING PART
-
   socket.on("disconnect", () => {
     console.log(`🔌 Client disconnected: ${socket.id}`);
-
-    // Har room se uss disconnected socket ko remove karo
     for (const projectId in activeUsersByRoom) {
       if (activeUsersByRoom[projectId].has(socket.id)) {
         activeUsersByRoom[projectId].delete(socket.id);
-
-        // Room ko wapas nayi, updated list bhejo
         const usersInRoom = Array.from(activeUsersByRoom[projectId].values());
         io.in(projectId).emit("room_users_update", usersInRoom);
-        break; // Ek user ek hi baar disconnect hota hai
+        break;
       }
     }
   });
 });
 
-// --- Database Connection Function ---
+// --- Database Connection ---
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    console.log("MongoDB connected successfully!");
+    console.log("✅ MongoDB Connected Successfully");
   } catch (err) {
-    console.error("MongoDB connection failed:", err);
-    process.exit(1); // Exit process with failure
+    console.error("❌ MongoDB Connection Failed:", err);
+    process.exit(1);
   }
 };
 
 // --- Server Start ---
-httpServer.listen(PORT, () => {
-  console.log(
-    `🚀 Server is running on port ${PORT} and listening for WebSocket connections.`
-  );
-  connectDB();
-});
+const startServer = async () => {
+  await connectDB();
+  httpServer.listen(PORT, () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
+  });
+};
+
+startServer();
