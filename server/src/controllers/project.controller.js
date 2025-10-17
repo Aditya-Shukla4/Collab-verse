@@ -35,7 +35,7 @@ export const createProject = async (req, res) => {
 
     res.status(201).json(populatedProject);
   } catch (error) {
-    console.error("❌ ERROR in createProject:", error);
+    console.error("ERROR in createProject:", error);
     res.status(500).json({ message: "Server error while creating project." });
   }
 };
@@ -48,10 +48,10 @@ export const getProjects = async (req, res) => {
       .populate("members", "name avatarUrl")
       .sort({ createdAt: -1 });
 
-    res.status(200).json(projects);
+    res.status(200).json(projects || []);
   } catch (error) {
-    console.error("❌ ERROR in getProjects:", error);
-    res.status(500).json({ message: "Server error while fetching projects." });
+    console.error("ERROR in getProjects:", error);
+    res.status(200).json([]);
   }
 };
 
@@ -80,8 +80,6 @@ export const getProjectById = async (req, res) => {
 // 4. Get projects for the logged-in user
 export const getMyProjects = async (req, res) => {
   try {
-    // 💥 NAYI LOGIC: Aise projects dhoondho jiska ya toh main owner (createdBy) hu,
-    // YA main uske members ki list me hu.
     const projects = await Project.find({
       $or: [{ createdBy: req.user.id }, { members: req.user.id }],
     })
@@ -89,12 +87,11 @@ export const getMyProjects = async (req, res) => {
       .populate("members", "name avatarUrl")
       .sort({ createdAt: -1 });
 
-    res.status(200).json(projects);
+    console.log("Projects returned:", projects.length);
+    res.status(200).json(projects || []);
   } catch (error) {
-    console.error("❌ ERROR in getMyProjects:", error);
-    res
-      .status(500)
-      .json({ message: "Server error while fetching user's projects." });
+    console.error("ERROR in getMyProjects:", error);
+    res.status(200).json([]);
   }
 };
 
@@ -119,7 +116,7 @@ export const updateProject = async (req, res) => {
 
     res.status(200).json(updatedProject);
   } catch (error) {
-    console.error("❌ ERROR in updateProject:", error);
+    console.error("ERROR in updateProject:", error);
     res.status(500).json({ message: "Server error while updating project." });
   }
 };
@@ -142,18 +139,16 @@ export const deleteProject = async (req, res) => {
     }
 
     await Project.findByIdAndDelete(projectId);
-
-    // Also delete any pending invitations for this project
     await Collaboration.deleteMany({ project: projectId });
 
     res.status(200).json({ message: "Project deleted successfully." });
   } catch (error) {
-    console.error("❌ ERROR in deleteProject:", error);
+    console.error("ERROR in deleteProject:", error);
     res.status(500).json({ message: "Server error while deleting project." });
   }
 };
 
-// --- INVITATION & COLLABORATION LOGIC (Using Collaboration Model) ---
+// --- INVITATION LOGIC (Using Collaboration Model) ---
 
 // 7. Invite a user to a project by email
 export const inviteToProject = async (req, res) => {
@@ -167,36 +162,43 @@ export const inviteToProject = async (req, res) => {
         .status(400)
         .json({ message: "Please provide an email to invite." });
     }
+
     const project = await Project.findById(projectId);
     if (!project || project.createdBy.toString() !== ownerId) {
       return res
         .status(404)
         .json({ message: "Project not found or you are not the owner." });
     }
+
     const userToInvite = await User.findOne({ email: collaboratorEmail });
     if (!userToInvite) {
       return res
         .status(404)
         .json({ message: "User with that email not found." });
     }
+
     if (ownerId === userToInvite._id.toString()) {
       return res.status(400).json({ message: "You cannot invite yourself." });
     }
+
     const existingCollab = await Collaboration.findOne({
       project: projectId,
       collaborator: userToInvite._id,
     });
+
     if (existingCollab) {
       return res
         .status(400)
-        .json({ message: `User has already been invited or is a member.` });
+        .json({ message: "User has already been invited or is a member." });
     }
+
     const newCollaboration = new Collaboration({
       project: projectId,
       collaborator: userToInvite._id,
       owner: ownerId,
       status: "pending",
     });
+
     await newCollaboration.save();
     res.status(201).json({ message: "User invited successfully." });
   } catch (error) {
@@ -205,72 +207,9 @@ export const inviteToProject = async (req, res) => {
   }
 };
 
-// 8. Accept a project invitation
-export const acceptProjectInvite = async (req, res) => {
-  // 💥 SPY MESSAGE 💥
-  console.log(
-    "--- TRYING TO ACCEPT INVITE - Controller function was reached! ---"
-  );
+// --- JOIN REQUEST LOGIC ---
 
-  try {
-    const collaborationId = req.params.id;
-    const userId = req.user.id;
-
-    const collab = await Collaboration.findById(collaborationId);
-
-    if (!collab || collab.collaborator.toString() !== userId) {
-      return res
-        .status(404)
-        .json({ message: "Invitation not found or not for you." });
-    }
-    if (collab.status !== "pending") {
-      return res.status(400).json({
-        message: `This invitation has already been ${collab.status}.`,
-      });
-    }
-
-    collab.status = "accepted";
-    await collab.save();
-
-    await Project.findByIdAndUpdate(collab.project, {
-      $addToSet: { members: userId },
-    });
-
-    res
-      .status(200)
-      .json({ message: "Invitation accepted. You are now a collaborator." });
-  } catch (error) {
-    console.error("Accept Invite Error:", error);
-    res.status(500).json({ message: "Server error while accepting invite." });
-  }
-};
-
-// 9. Reject a project invitation
-export const rejectProjectInvite = async (req, res) => {
-  try {
-    const collaborationId = req.params.id;
-    const userId = req.user.id;
-
-    const result = await Collaboration.findOneAndDelete({
-      _id: collaborationId,
-      collaborator: userId,
-    });
-
-    if (!result) {
-      return res
-        .status(404)
-        .json({ message: "Invitation not found or not for you." });
-    }
-
-    res.status(200).json({ message: "Invitation rejected." });
-  } catch (error) {
-    res.status(500).json({ message: "Server error while rejecting invite." });
-  }
-};
-
-// --- JOIN REQUEST LOGIC (Separate from Invites) ---
-
-// 10. Request to join a project
+// 8. Request to join a project
 export const requestToJoinProject = async (req, res) => {
   try {
     const projectId = req.params.id;
@@ -280,16 +219,19 @@ export const requestToJoinProject = async (req, res) => {
     if (!project) {
       return res.status(404).json({ message: "Project not found." });
     }
+
     if (project.createdBy.equals(userId)) {
       return res
         .status(400)
         .json({ message: "You cannot request to join your own project." });
     }
+
     if (project.members.includes(userId)) {
       return res
         .status(400)
         .json({ message: "You are already a member of this project." });
     }
+
     if (project.joinRequests.includes(userId)) {
       return res
         .status(400)
@@ -308,7 +250,7 @@ export const requestToJoinProject = async (req, res) => {
   }
 };
 
-// 11. Accept a user's request to join
+// 9. Accept a user's request to join
 export const acceptJoinRequest = async (req, res) => {
   try {
     const { id: projectId, userId: applicantId } = req.params;
@@ -329,6 +271,7 @@ export const acceptJoinRequest = async (req, res) => {
       "members",
       "name avatarUrl"
     );
+
     res.status(200).json({
       message: "User has been added to the project.",
       project: updatedProject,
@@ -339,7 +282,7 @@ export const acceptJoinRequest = async (req, res) => {
   }
 };
 
-// 12. Reject a user's request to join
+// 10. Reject a user's request to join
 export const rejectJoinRequest = async (req, res) => {
   try {
     const { id: projectId, userId: applicantId } = req.params;

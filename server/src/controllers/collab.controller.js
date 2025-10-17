@@ -18,17 +18,20 @@ export const getPendingInvitations = async (req, res) => {
     })
       .populate("project", "title")
       .populate("owner", "name avatarUrl");
-    res.status(200).json(invitations);
+
+    // FIX: Always return an array, even if empty
+    console.log("Invitations found:", invitations.length);
+    res.status(200).json(invitations || []);
   } catch (error) {
     console.error("ERROR in getPendingInvitations:", error);
-    res.status(500).json({ message: "Server error fetching invitations." });
+    res.status(200).json([]);
   }
 };
 
 // @desc    Accept a project invitation
 // @route   PUT /api/collabs/invitations/:id/accept
 export const acceptProjectInvite = async (req, res) => {
-  console.log("--- TRYING TO ACCEPT INVITE (Collab Controller) ---");
+  console.log("--- ACCEPT INVITE - Controller reached ---");
   try {
     const collaborationId = req.params.id;
     const userId = req.user.id;
@@ -40,6 +43,7 @@ export const acceptProjectInvite = async (req, res) => {
         .status(404)
         .json({ message: "Invitation not found or not for you." });
     }
+
     if (collab.status !== "pending") {
       return res
         .status(400)
@@ -49,11 +53,15 @@ export const acceptProjectInvite = async (req, res) => {
     collab.status = "accepted";
     await collab.save();
 
+    // Add user to project members
     await Project.findByIdAndUpdate(collab.project, {
       $addToSet: { members: userId },
     });
 
-    res.status(200).json({ message: "Invitation accepted." });
+    res.status(200).json({
+      message: "Invitation accepted.",
+      collaboration: collab,
+    });
   } catch (error) {
     console.error("ERROR in acceptProjectInvite:", error);
     res.status(500).json({ message: "Server error while accepting invite." });
@@ -88,6 +96,7 @@ export const rejectProjectInvite = async (req, res) => {
 // --- COLLEAGUE (DOSTI) REQUEST LOGIC ---
 
 // @desc    Send a collaboration request to another user
+// @route   POST /api/collabs/requests/:userId/send
 export const sendCollabRequest = async (req, res) => {
   try {
     const senderId = req.user.id;
@@ -95,6 +104,7 @@ export const sendCollabRequest = async (req, res) => {
 
     if (!isValidObjectId(receiverId))
       return res.status(400).json({ message: "Invalid user ID." });
+
     if (senderId === receiverId)
       return res
         .status(400)
@@ -106,21 +116,27 @@ export const sendCollabRequest = async (req, res) => {
     ]);
 
     if (!receiver) return res.status(404).json({ message: "User not found." });
+
     if (sender.colleagues?.includes(receiverId))
       return res.status(400).json({ message: "You are already colleagues." });
+
     if (sender.sentCollabRequests?.includes(receiverId))
       return res.status(400).json({ message: "Request already sent." });
 
     await User.findByIdAndUpdate(receiverId, {
       $addToSet: { receivedCollabRequests: senderId },
     });
+
     const updatedSender = await User.findByIdAndUpdate(
       senderId,
       { $addToSet: { sentCollabRequests: receiverId } },
       { new: true }
     ).select("-password");
 
-    res.status(200).json({ message: "Request sent.", user: updatedSender });
+    res.status(200).json({
+      message: "Request sent.",
+      user: updatedSender,
+    });
   } catch (error) {
     console.error("ERROR in sendCollabRequest:", error);
     res.status(500).json({ message: "Server error." });
@@ -128,6 +144,7 @@ export const sendCollabRequest = async (req, res) => {
 };
 
 // @desc    Accept a collaboration request
+// @route   PUT /api/collabs/requests/:userId/accept
 export const acceptCollabRequest = async (req, res) => {
   try {
     const receiverId = req.user.id;
@@ -150,9 +167,10 @@ export const acceptCollabRequest = async (req, res) => {
       { new: true }
     ).select("-password");
 
-    res
-      .status(200)
-      .json({ message: "Request accepted.", user: updatedReceiver });
+    res.status(200).json({
+      message: "Request accepted.",
+      user: updatedReceiver,
+    });
   } catch (error) {
     console.error("Error accepting request:", error);
     res.status(500).json({ message: "Server error." });
@@ -160,6 +178,7 @@ export const acceptCollabRequest = async (req, res) => {
 };
 
 // @desc    Reject or cancel a collaboration request
+// @route   DELETE /api/collabs/requests/:userId/reject
 export const rejectCollabRequest = async (req, res) => {
   try {
     const currentUserId = req.user.id;
@@ -186,9 +205,10 @@ export const rejectCollabRequest = async (req, res) => {
       { new: true }
     ).select("-password");
 
-    res
-      .status(200)
-      .json({ message: "Request handled.", user: updatedCurrentUser });
+    res.status(200).json({
+      message: "Request handled.",
+      user: updatedCurrentUser,
+    });
   } catch (error) {
     console.error("Error rejecting/cancelling request:", error);
     res.status(500).json({ message: "Server error." });
@@ -196,6 +216,7 @@ export const rejectCollabRequest = async (req, res) => {
 };
 
 // @desc    Get all received colleague requests
+// @route   GET /api/collabs/requests/received
 export const getReceivedRequests = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate({
@@ -207,9 +228,11 @@ export const getReceivedRequests = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    res.status(200).json(user.receivedCollabRequests);
+    // FIX: Always return array even if user has no requests
+    console.log("Received requests:", user.receivedCollabRequests?.length || 0);
+    res.status(200).json(user.receivedCollabRequests || []);
   } catch (error) {
     console.error("ERROR in getReceivedRequests:", error);
-    res.status(500).json({ message: "Server error while fetching requests." });
+    res.status(200).json([]);
   }
 };

@@ -10,7 +10,9 @@ export const searchUsers = async (req, res) => {
     const users = await User.find(keyword)
       .find({ _id: { $ne: req.user._id } }) // Exclude self
       .select("-password");
-    res.json(users);
+
+    // 🔧 FIX: Always return an array, even if empty
+    res.json(users || []);
   } catch (error) {
     console.error("Error searching users:", error);
     res.status(500).json({ message: "Server error while searching users." });
@@ -32,7 +34,9 @@ export const searchForInvite = async (req, res) => {
       .find({ _id: { $ne: req.user._id } })
       .limit(10)
       .select("name email avatarUrl");
-    res.json(users);
+
+    // 🔧 FIX: Always return an array
+    res.json(users || []);
   } catch (error) {
     console.error("User invite search error:", error);
     res.status(500).json({ message: "Server error while searching users." });
@@ -99,8 +103,10 @@ export const getMyColleagues = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
-    res.status(200).json(user.colleagues);
+    // 🔧 FIX: Ensure colleagues is always an array
+    res.status(200).json(user.colleagues || []);
   } catch (error) {
+    console.error("Error fetching colleagues:", error);
     res
       .status(500)
       .json({ message: "Server error while fetching colleagues." });
@@ -117,10 +123,12 @@ export const getMyNotifications = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
+    // 🔧 FIX: Ensure receivedCollabRequests is always an array
     res.status(200).json({
-      colleagueRequests: user.receivedCollabRequests,
+      colleagueRequests: user.receivedCollabRequests || [],
     });
   } catch (error) {
+    console.error("Error fetching notifications:", error);
     res
       .status(500)
       .json({ message: "Server error while fetching notifications." });
