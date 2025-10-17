@@ -1,4 +1,4 @@
-// client/src/pages/requests.jsx
+"use client";
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Check, X, Inbox } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
 
 export default function RequestsPage() {
   const router = useRouter();
@@ -34,25 +35,16 @@ export default function RequestsPage() {
     const fetchNotifications = async () => {
       setIsLoading(true);
       try {
-        const response = await api.get("/users/me/notifications");
+        const [colleagueRes, projectRes] = await Promise.all([
+          api.get("/collabs/requests/received"),
+          api.get("/collabs/invitations/pending"),
+        ]);
 
-        // FIX: Safely handle response with default values
-        const colleagues = Array.isArray(response.data?.colleagueRequests)
-          ? response.data.colleagueRequests
-          : [];
-        const invites = Array.isArray(response.data?.projectInvites)
-          ? response.data.projectInvites
-          : [];
-
-        console.log("Colleague requests:", colleagues.length);
-        console.log("Project invites:", invites.length);
-
-        setColleagueRequests(colleagues);
-        setProjectInvites(invites);
+        setColleagueRequests(colleagueRes.data || []);
+        setProjectInvites(projectRes.data || []);
       } catch (err) {
         console.error("Failed to fetch notifications:", err);
-        setColleagueRequests([]);
-        setProjectInvites([]);
+        toast.error("Could not load your inbox.");
       } finally {
         setIsLoading(false);
       }
@@ -60,57 +52,59 @@ export default function RequestsPage() {
     fetchNotifications();
   }, [isAuthenticated, authLoading, router]);
 
-  // --- Handlers for Colleague Requests ---
   const handleAcceptColleague = async (senderId) => {
+    const toastId = toast.loading("Accepting request...");
     try {
       await api.put(`/collabs/requests/${senderId}/accept`);
       setColleagueRequests((current) =>
         current.filter((req) => req._id !== senderId)
       );
       await refetchUser();
+      toast.success("Request accepted!", { id: toastId });
     } catch (error) {
-      console.error("Error accepting colleague request:", error);
-      alert("Error accepting request.");
+      toast.error("Error accepting request.", { id: toastId });
     }
   };
 
   const handleRejectColleague = async (senderId) => {
+    const toastId = toast.loading("Rejecting request...");
     try {
       await api.delete(`/collabs/requests/${senderId}/reject`);
       setColleagueRequests((current) =>
         current.filter((req) => req._id !== senderId)
       );
       await refetchUser();
+      toast.success("Request rejected.", { id: toastId });
     } catch (error) {
-      console.error("Error rejecting colleague request:", error);
-      alert("Error rejecting request.");
+      toast.error("Error rejecting request.", { id: toastId });
     }
   };
 
-  // --- Handlers for Project Invites ---
   const handleAcceptInvite = async (invitationId) => {
+    const toastId = toast.loading("Accepting invite...");
     try {
       await api.put(`/collabs/invitations/${invitationId}/accept`);
       setProjectInvites((current) =>
         current.filter((inv) => inv._id !== invitationId)
       );
       await refetchUser();
+      toast.success("Project invite accepted!", { id: toastId });
     } catch (error) {
-      console.error("Error accepting project invite:", error);
-      alert("Failed to accept invite.");
+      toast.error("Failed to accept invite.", { id: toastId });
     }
   };
 
   const handleRejectInvite = async (invitationId) => {
+    const toastId = toast.loading("Rejecting invite...");
     try {
       await api.delete(`/collabs/invitations/${invitationId}/reject`);
       setProjectInvites((current) =>
         current.filter((inv) => inv._id !== invitationId)
       );
       await refetchUser();
+      toast.success("Project invite rejected.", { id: toastId });
     } catch (error) {
-      console.error("Error rejecting project invite:", error);
-      alert("Failed to reject invite.");
+      toast.error("Failed to reject invite.", { id: toastId });
     }
   };
 
@@ -122,6 +116,10 @@ export default function RequestsPage() {
 
   return (
     <main>
+      <Toaster
+        position="bottom-center"
+        toastOptions={{ style: { background: "#333", color: "#fff" } }}
+      />
       <div className="space-y-2 mb-8">
         <h1 className="text-4xl font-bold tracking-tighter text-white">
           Your Inbox
@@ -131,7 +129,7 @@ export default function RequestsPage() {
         </p>
       </div>
 
-      {colleagueRequests.length === 0 && projectInvites.length === 0 ? (
+      {colleagueRequests?.length === 0 && projectInvites?.length === 0 ? (
         <div className="text-center py-20 bg-black/20 rounded-lg">
           <Inbox className="mx-auto h-12 w-12 text-slate-500" />
           <h3 className="mt-4 text-lg font-medium text-white">
@@ -140,7 +138,7 @@ export default function RequestsPage() {
         </div>
       ) : (
         <div className="space-y-12">
-          {projectInvites.length > 0 && (
+          {projectInvites?.length > 0 && (
             <div>
               <h2 className="text-2xl font-bold tracking-tight text-white mb-6">
                 Project Invitations ({projectInvites.length})
@@ -153,13 +151,14 @@ export default function RequestsPage() {
                   >
                     <CardHeader>
                       <CardTitle>
-                        {invite.project?.title || "Untitled"}
+                        {invite.project?.title || "Untitled Project"}
                       </CardTitle>
                       <CardDescription>
-                        Invitation from {invite.owner?.name || "Unknown"}
+                        Invitation from {invite.owner?.name || "Unknown User"}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="flex gap-4">
+                    {/* --- 💥 ASLI FIX YAHAN HAI 💥 --- */}
+                    <CardContent className="flex flex-col space-y-2">
                       <Button
                         onClick={() => handleAcceptInvite(invite._id)}
                         className="w-full bg-green-600 hover:bg-green-700"
@@ -180,7 +179,7 @@ export default function RequestsPage() {
             </div>
           )}
 
-          {colleagueRequests.length > 0 && (
+          {colleagueRequests?.length > 0 && (
             <div>
               <h2 className="text-2xl font-bold tracking-tight text-white mb-6">
                 Colleague Requests ({colleagueRequests.length})

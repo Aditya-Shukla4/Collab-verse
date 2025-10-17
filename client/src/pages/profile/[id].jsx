@@ -1,8 +1,11 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/axios";
 import Link from "next/link";
+import toast, { Toaster } from "react-hot-toast";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -17,15 +20,12 @@ import {
   UserPlus,
   Check,
   X,
-  Edit, // Edit icon ke liye
+  Edit,
 } from "lucide-react";
-// Tip: Aage जाकर 'react-hot-toast' jaisi library daal lena 'alert' ki jagah
-// import toast from 'react-hot-toast';
 
 export default function UserProfilePage() {
   const router = useRouter();
   const { id } = router.query;
-
   const {
     user: loggedInUser,
     isAuthenticated,
@@ -82,43 +82,45 @@ export default function UserProfilePage() {
   }, [loggedInUser, userProfile]);
 
   // --- ACTION HANDLERS ---
-  const handleAction = async (apiCall, successStatus) => {
+  const handleAction = async (apiCall, successMessage) => {
     if (!userProfile?._id) return;
     setIsActionLoading(true);
+    const toastId = toast.loading("Processing...");
     try {
       await apiCall();
-      await refetchUser(); // Apna data fresh karo
-      await fetchUserProfile(); // Profile waale user ka data bhi fresh karo
-      if (successStatus) {
-        setRelationshipStatus(successStatus);
-      }
+      toast.success(successMessage, { id: toastId });
+      await refetchUser(); // Refresh your own data
+      await fetchUserProfile(); // Refresh the profile data you are viewing
     } catch (error) {
+      toast.error(error.response?.data?.message || "Action failed.", {
+        id: toastId,
+      });
       console.error("Action failed:", error);
-      // toast.error("Action failed. Please try again."); // alert() se behtar
     } finally {
       setIsActionLoading(false);
     }
   };
 
+  // --- 💥 ASLI FIX YAHAN HAI: NAYE, SAHI WALE URLS 💥 ---
   const handleSendRequest = () =>
     handleAction(
-      () => api.post(`/collabs/send-request/${userProfile._id}`),
-      "sent"
+      () => api.post(`/collabs/requests/${userProfile._id}/send`),
+      "Request sent!"
     );
   const handleAcceptRequest = () =>
     handleAction(
-      () => api.put(`/collabs/accept-request/${userProfile._id}`),
-      "colleagues"
+      () => api.put(`/collabs/requests/${userProfile._id}/accept`),
+      "Request accepted!"
     );
   const handleRejectRequest = () =>
     handleAction(
-      () => api.delete(`/collabs/reject-request/${userProfile._id}`),
-      "none"
+      () => api.delete(`/collabs/requests/${userProfile._id}/reject`),
+      "Request rejected."
     );
   const handleCancelRequest = () =>
     handleAction(
-      () => api.delete(`/collabs/cancel-request/${userProfile._id}`),
-      "none"
+      () => api.delete(`/collabs/requests/${userProfile._id}/reject`),
+      "Request cancelled."
     );
 
   // --- RENDER LOGIC ---
@@ -209,6 +211,10 @@ export default function UserProfilePage() {
 
   return (
     <main className="container mx-auto p-4 md:p-8 text-white">
+      <Toaster
+        position="bottom-center"
+        toastOptions={{ style: { background: "#333", color: "#fff" } }}
+      />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column */}
         <div className="lg:col-span-1 space-y-6">
