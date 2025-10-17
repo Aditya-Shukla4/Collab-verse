@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 // Dedicated Navbar for this page
 const LandingNavbar = () => (
-  <header className="flex flex-col sm:flex-row items-center justify-between w-full py-4 px-8 bg-black text-white gap-4">
+  <header className="flex flex-col sm:flex-row items-center justify-between w-full py-4 px-8 bg-black text-white gap-4 sticky top-0 z-50">
     <div className="flex items-center gap-3">
       <Image
         src="/Logo.png"
@@ -30,10 +30,10 @@ const LandingNavbar = () => (
       </a>
     </nav>
     <div className="flex gap-3">
-      <Button asChild variant="ghost" className="hover:bg-violet-800">
+      <Button asChild variant="ghost" className="hover:bg-violet-800 hover:text-white">
         <Link href="/LoginPage">Login</Link>
       </Button>
-      <Button asChild variant="ghost" className="hover:bg-violet-800">
+      <Button asChild variant="ghost" className="hover:bg-violet-800 hover:text-white">
         <Link href="/SignupPage">Sign-up</Link>
       </Button>
     </div>
@@ -57,24 +57,24 @@ const LandingFooter = () => (
         <h3 className="font-semibold text-white mb-3">Quick Links</h3>
         <ul className="space-y-2">
           <li>
-            <a href="#home" className="hover:text-white">
+            <Link href="#home" className="hover:text-white">
               Home
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="#features" className="hover:text-white">
+            <Link href="/features" className="hover:text-white">
               Features
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="#testimonials" className="hover:text-white">
+            <Link href="/about" className="hover:text-white">
               About
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="#contact" className="hover:text-white">
+            <Link href="/contact" className="hover:text-white">
               Contact
-            </a>
+            </Link>
           </li>
         </ul>
       </div>
@@ -106,7 +106,10 @@ const LandingFooter = () => (
       <div>
         <h3 className="font-semibold text-white mb-3">Follow Us</h3>
         <div className="flex flex-col space-y-2">
-          <a href="#" className="hover:text-white flex items-center gap-2">
+          <a
+            href="https://github.com/Aditya-Shukla4/Collab-verse"
+            className="hover:text-white flex items-center gap-2"
+          >
             <Image
               src="https://cdn-icons-png.flaticon.com/512/3291/3291695.png"
               alt="GitHub"
@@ -137,7 +140,7 @@ const LandingFooter = () => (
 
 export default function LandingPage() {
   return (
-    <div className="bg-black text-white font-montserrat font-medium">
+    <div className="bg-black text-white font-montserrat font-medium flex flex-col">
       <div className="bg-gradient-to-b from-black via-violet-800 to-black">
         <LandingNavbar />
 
@@ -153,10 +156,16 @@ export default function LandingPage() {
                   Collab Verse
                 </span>
               </div>
-              <div className="flex gap-6 justify-center text-xl md:text-2xl flex-wrap *:p-4 *:rounded-lg *:bg-gradient-to-r *:from-violet-950 *:via-purple-950 *:to-black/60 *:m-2">
-                <div>Collab with devs</div>
-                <div>Create and Contribute</div>
-                <div>Grow Together</div>
+              <div className="flex gap-6 justify-center text-xl md:text-2xl flex-wrap">
+                <div className="p-4 rounded-lg bg-gradient-to-r from-violet-950 via-purple-950 to-black/60 m-2">
+                  Collab with devs
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-to-r from-violet-950 via-purple-950 to-black/60 m-2">
+                  Create and Contribute
+                </div>
+                <div className="p-4 rounded-lg bg-gradient-to-r from-violet-950 via-purple-950 to-black/60 m-2">
+                  Grow Together
+                </div>
               </div>
               <div className="text-center text-white/60 text-lg md:text-2xl max-w-3xl mx-auto">
                 A platform for finding like-minds for project creations and
