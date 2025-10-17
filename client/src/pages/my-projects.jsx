@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/axios";
@@ -32,8 +34,8 @@ export default function MyProjectsPage() {
         api.get("/projects/my-projects"),
         api.get("/collabs/invitations/pending"),
       ]);
-      setProjects(projectsResponse.data);
-      setInvitations(invitesResponse.data);
+      setProjects(projectsResponse.data || []);
+      setInvitations(invitesResponse.data || []);
     } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
       setError("Could not load your projects and invitations.");
@@ -65,7 +67,7 @@ export default function MyProjectsPage() {
       toast.success("Invitation accepted! Project added to your list.", {
         id: toastId,
       });
-      fetchAllData(); // Re-fetch everything to show the new project
+      fetchAllData();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to accept.", {
         id: toastId,
@@ -97,13 +99,12 @@ export default function MyProjectsPage() {
     return <div className="text-center text-red-500 py-20">{error}</div>;
   }
 
-  // 💥 NAYI LOGIC: Projects ko do list me baant do 💥
-  const ownedProjects = projects.filter(
-    (p) => p.createdBy._id === loggedInUser?._id
-  );
-  const sharedProjects = projects.filter(
-    (p) => p.createdBy._id !== loggedInUser?._id
-  );
+  const ownedProjects = loggedInUser
+    ? projects.filter((p) => p.createdBy?._id === loggedInUser._id)
+    : [];
+  const sharedProjects = loggedInUser
+    ? projects.filter((p) => p.createdBy?._id !== loggedInUser._id)
+    : [];
 
   return (
     <main>
@@ -127,8 +128,7 @@ export default function MyProjectsPage() {
         </Button>
       </div>
 
-      {/* --- INVITATIONS SECTION --- */}
-      {invitations.length > 0 && (
+      {invitations?.length > 0 && (
         <div className="mb-12">
           <h2 className="text-2xl font-bold tracking-tight text-white mb-4 flex items-center">
             <Mail className="mr-3 h-6 w-6 text-purple-400" /> Pending
@@ -188,12 +188,11 @@ export default function MyProjectsPage() {
         </div>
       )}
 
-      {/* --- OWNED PROJECTS SECTION --- */}
       <div className="mb-12">
         <h2 className="text-2xl font-bold tracking-tight text-white mb-4">
           My Created Projects
         </h2>
-        {ownedProjects.length === 0 ? (
+        {ownedProjects?.length === 0 ? (
           <div className="text-center py-20 bg-black/20 rounded-lg">
             <FolderKanban className="mx-auto h-12 w-12 text-slate-500" />
             <h3 className="mt-4 text-lg font-medium text-white">
@@ -217,13 +216,12 @@ export default function MyProjectsPage() {
         )}
       </div>
 
-      {/* --- SHARED PROJECTS SECTION --- */}
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-white mb-4 flex items-center">
           <Share2 className="mr-3 h-6 w-6 text-purple-400" /> Projects Shared
           With Me
         </h2>
-        {sharedProjects.length === 0 ? (
+        {sharedProjects?.length === 0 ? (
           <div className="text-center py-20 bg-black/20 rounded-lg">
             <FolderKanban className="mx-auto h-12 w-12 text-slate-500" />
             <h3 className="mt-4 text-lg font-medium text-white">
