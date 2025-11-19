@@ -85,7 +85,7 @@ const LandingFooter = () => (
           </a>
           <a href="#" className="hover:text-white flex items-center gap-2">
             <Image
-              src="https://cdn-icons-png.flaticon.com/512/1384/1384014.png"
+              src="https://cdn-icons-png.flaticon.com/512/10110/10110392.png"
               alt="LinkedIn"
               width={24}
               height={24}

@@ -1,68 +1,49 @@
-import { useState } from "react";
-import LandingNavbar from "@/components/layout/LandingNavbar";
-import LandingFooter from "@/components/layout/LandingFooter";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+import { useForm } from "@formspree/react";
+import LandingNavbar from "@/components/layout/LandingNavbar"; // 👈 NAVBAR IMPORT
 
 export default function ContactPage() {
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState(null);
+  const [state, handleSubmit] = useForm("xjklwalg");
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setStatus(null);
+  if (state.succeeded) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 via-purple-900 to-black text-white flex flex-col">
+        <LandingNavbar /> {/* 👈 NAVBAR TOP */}
+        <div className="flex items-center justify-center flex-1 px-4">
+          <div className="max-w-md text-center">
+            <div className="text-6xl mb-4">✅</div>
+            <h2 className="text-2xl font-bold mb-2">Message Sent!</h2>
+            <p className="text-gray-300 mb-4">We'll get back to you soon.</p>
 
-    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
-      setStatus({ type: "error", msg: "Fill all fields first." });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/contact`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setStatus({ type: "error", msg: data?.error || "Submission failed" });
-      } else {
-        setStatus({
-          type: "success",
-          msg: "Message sent — we'll get back to you!",
-        });
-        setForm({ name: "", email: "", message: "" });
-      }
-    } catch (err) {
-      console.error("contact submit:", err);
-      setStatus({ type: "error", msg: "Network error — try again." });
-    } finally {
-      setLoading(false);
-    }
+            <button
+              onClick={() => (window.location.href = "/contact")}
+              className="px-6 py-2 bg-purple-600 rounded-lg hover:bg-purple-700 transition"
+            >
+              Send Another Message
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="bg-black text-white font-montserrat font-medium min-h-screen flex flex-col">
-      <div className="bg-gradient-to-b from-black via-violet-800 to-black pb-12">
-        <LandingNavbar />
+      {/* 👇 NAVBAR AT THE TOP */}
+      <LandingNavbar />
+
+      <div className="bg-gradient-to-b from-black via-violet-800 to-black pb-12 flex-1">
         <section className="max-w-4xl mx-auto px-6 py-20">
           <h1 className="text-5xl font-bold text-center mb-8">Contact Us</h1>
           <p className="text-gray-300 text-lg text-center max-w-2xl mx-auto mb-12">
             Have questions, suggestions, or need support? We're here for you.
           </p>
 
-          <div className="bg-purple-950/50 backdrop-blur-md p-8 rounded-2xl shadow-lg">
+          <div className="bg-black/20 backdrop-blur-lg border border-purple-800 rounded-xl p-8">
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
                 <label className="block text-gray-300 mb-1 text-sm">Name</label>
                 <input
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((s) => ({ ...s, name: e.target.value }))
-                  }
+                  name="name"
                   required
                   type="text"
                   className="w-full p-3 rounded-lg bg-black/40 border border-purple-800 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -75,10 +56,7 @@ export default function ContactPage() {
                   Email
                 </label>
                 <input
-                  value={form.email}
-                  onChange={(e) =>
-                    setForm((s) => ({ ...s, email: e.target.value }))
-                  }
+                  name="email"
                   required
                   type="email"
                   className="w-full p-3 rounded-lg bg-black/40 border border-purple-800 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -91,10 +69,7 @@ export default function ContactPage() {
                   Message
                 </label>
                 <textarea
-                  value={form.message}
-                  onChange={(e) =>
-                    setForm((s) => ({ ...s, message: e.target.value }))
-                  }
+                  name="message"
                   required
                   rows="5"
                   className="w-full p-3 rounded-lg bg-black/40 border border-purple-800 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -102,30 +77,23 @@ export default function ContactPage() {
                 />
               </div>
 
-              {status && (
-                <div
-                  className={`text-sm p-2 rounded ${
-                    status.type === "success"
-                      ? "bg-green-900/40 text-green-300"
-                      : "bg-red-900/40 text-red-300"
-                  }`}
-                >
-                  {status.msg}
+              {state.errors && state.errors.length > 0 && (
+                <div className="text-sm p-3 rounded-lg bg-red-900/40 text-red-300 border border-red-700">
+                  Oops! There was an error. Please try again.
                 </div>
               )}
 
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-gradient-to-r from-violet-700 via-purple-800 to-purple-900 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-50"
+                disabled={state.submitting}
+                className="w-full py-3 bg-gradient-to-r from-violet-700 via-purple-800 to-purple-900 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Sending..." : "Send Message"}
+                {state.submitting ? "Sending..." : "Send Message"}
               </button>
             </form>
           </div>
         </section>
       </div>
-      <LandingFooter />
     </div>
   );
 }

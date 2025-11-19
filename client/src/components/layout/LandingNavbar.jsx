@@ -61,10 +61,18 @@ const LandingNavbar = () => {
 
           {/* Desktop auth buttons */}
           <div className="hidden md:flex gap-3">
-            <Button asChild variant="ghost" className="hover:bg-violet-800">
+            <Button
+              asChild
+              variant="ghost"
+              className="hover:bg-violet-800 hover:text-white"
+            >
               <Link href="/LoginPage">Login</Link>
             </Button>
-            <Button asChild variant="ghost" className="hover:bg-violet-800">
+            <Button
+              asChild
+              variant="ghost"
+              className="hover:bg-violet-800 hover:text-white"
+            >
               <Link href="/SignupPage">Sign-up</Link>
             </Button>
           </div>
@@ -122,7 +130,7 @@ const LandingNavbar = () => {
               <Button
                 asChild
                 variant="ghost"
-                className="w-full justify-center border border-purple-700 hover:bg-violet-900/60"
+                className="w-full justify-center border border-purple-700 hover:bg-violet-900/60 hover:text-white"
               >
                 <Link href="/LoginPage" onClick={() => setMobileOpen(false)}>
                   Login
