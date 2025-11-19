@@ -1,5 +1,5 @@
 // server/src/controllers/contactController.js
-import Contact from "../models/contact.model.js";
+import { sendContactEmail } from "../services/email.service.js";
 
 const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email || "");
 
@@ -21,26 +21,21 @@ export const createContact = async (req, res) => {
       return res.status(400).json({ error: "message too short" });
     }
 
-    const contact = await Contact.create({
+    const payload = {
       name: String(name).trim(),
       email: String(email).trim(),
       message: String(message).trim(),
-    });
+    };
 
-    return res.status(201).json({ ok: true, contact });
+    // 👉 SIRF EMAIL YAHI SE JAAYEGA
+    await sendContactEmail(payload);
+
+    return res.status(200).json({
+      ok: true,
+      message: "Your message has been sent successfully.",
+    });
   } catch (err) {
     console.error("createContact error:", err);
-    return res.status(500).json({ error: "internal server error" });
-  }
-};
-
-// optional – for admin panel etc.
-export const getContacts = async (req, res) => {
-  try {
-    const contacts = await Contact.find().sort({ createdAt: -1 }).lean();
-    return res.json({ ok: true, contacts });
-  } catch (err) {
-    console.error("getContacts error:", err);
     return res.status(500).json({ error: "internal server error" });
   }
 };
