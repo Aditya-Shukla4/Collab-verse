@@ -12,6 +12,7 @@ import projectRoutes from "./src/routes/project.routes.js";
 import collabRoutes from "./src/routes/collab.routes.js";
 import authRoutes from "./src/routes/auth.routes.js";
 import searchRoutes from "./src/routes/search.routes.js";
+import contactRoutes from "./src/routes/contact.js";
 import Project from "./src/models/project.model.js";
 import "./src/config/passport.js";
 
@@ -51,6 +52,7 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/collabs", collabRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/search", searchRoutes);
+app.use("/api/contact", contactRoutes);
 
 // --- HTTP and Socket.IO Server Setup ---
 const httpServer = createServer(app);
