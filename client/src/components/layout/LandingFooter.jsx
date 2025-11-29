@@ -1,5 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
+import {Linkedin} from 'lucide-react';
+import {GithubIcon} from 'lucide-react';
 
 const LandingFooter = () => (
   <footer
@@ -74,23 +76,25 @@ const LandingFooter = () => (
             href="https://github.com/Aditya-Shukla4/Collab-verse"
             className="hover:text-white flex items-center gap-2"
           >
-            <Image
+            {/* <Image
               src="https://cdn-icons-png.flaticon.com/512/3291/3291695.png"
               alt="GitHub"
               width={24}
               height={24}
               className="bg-white rounded-full"
-            />
+            /> */}
+            <GithubIcon size={16}/>
             <span>Github</span>
           </a>
           <a href="#" className="hover:text-white flex items-center gap-2">
-            <Image
+            {/* <Image
               src="https://cdn-icons-png.flaticon.com/512/10110/10110392.png"
               alt="LinkedIn"
               width={24}
               height={24}
               className="bg-white rounded-lg"
-            />
+            /> */}
+            <Linkedin size={16}/>
             <span>LinkedIn</span>
           </a>
         </div>

@@ -17,7 +17,6 @@ import {
 export default function Sidebar({ isOpen, toggleSidebar }) {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const pathname = router.pathname;
 
   if (!user) return null;
 
@@ -42,6 +41,10 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
     { href: `/profile/${user._id}`, label: "My Profile", icon: User },
   ];
 
+  // Use asPath (falls back to pathname) and remove query/hash for cleaner matching
+  const rawPath = router.asPath || router.pathname || "";
+  const currentPath = rawPath.split("?")[0].split("#")[0];
+
   return (
     <>
       {/* Overlay for mobile - only show when sidebar is open */}
@@ -58,7 +61,7 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
-        <div className="flex items-center justify-center p-4">
+        <div className="flex items-center justify-baseline p-4 ml-2">
           <Link href="/dashboard" className="flex items-center gap-3">
             <Image
               src="/Logo.png"
@@ -73,30 +76,41 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
         <nav className="flex-grow p-4 overflow-y-auto">
           <ul className="space-y-2">
-            {navLinks.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
-                  onClick={() => {
-                    // Only auto-close on mobile
-                    if (window.innerWidth < 1024) toggleSidebar();
-                  }}
-                  className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-800 ${
-                    pathname === link.href
-                      ? "bg-zinc-800 text-white"
-                      : "text-zinc-400"
-                  }`}
-                >
-                  <link.icon className="h-5 w-5 flex-shrink-0" />
-                  <span>{link.label}</span>
-                  {link.count > 0 && (
-                    <Badge className="ml-auto bg-purple-600 text-white">
-                      {link.count}
-                    </Badge>
-                  )}
-                </Link>
-              </li>
-            ))}
+            {navLinks.map((link) => {
+              // Robust active detection:
+              // - If this is the profile link (startsWith /profile), treat any /profile/* as active
+              // - Otherwise require exact match against currentPath
+              const isProfileLink = link.href.startsWith("/profile");
+              const isActive = isProfileLink
+                ? currentPath.startsWith("/profile")
+                : currentPath === link.href;
+
+              return (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    onClick={() => {
+                      // Only auto-close on mobile
+                      if (window.innerWidth < 1024) toggleSidebar();
+                    }}
+                    className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-800 ${
+                      isActive
+                        ? "bg-zinc-800 text-white"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                    aria-current={isActive ? "page" : undefined}
+                  >
+                    <link.icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="truncate">{link.label}</span>
+                    {link.count > 0 && (
+                      <Badge className="ml-auto bg-purple-600 text-white">
+                        {link.count}
+                      </Badge>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 

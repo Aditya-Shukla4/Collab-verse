@@ -51,7 +51,7 @@ export default function Header({ toggleSidebar, isSidebarOpen }) {
           onClick={toggleSidebar}
           variant="ghost"
           size="icon"
-          className="text-white hover:bg-zinc-800"
+          className="text-white hover:bg-zinc-800 hover:text-white"
         >
           <Menu className="h-6 w-6" />
         </Button>

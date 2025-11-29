@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import api from "@/api/axios";
@@ -46,7 +46,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Github,
   ExternalLink,
@@ -58,7 +57,17 @@ import {
   UserPlus,
   Search,
   TerminalSquare,
+  Maximize2,
+  Minimize2,
+  Copy,
 } from "lucide-react";
+
+/**
+ * ProjectDetailsPage
+ * - Improved layout & positioning
+ * - Fullscreen feature for CodeEditor now includes side-by-side Chat with draggable splitter
+ * - Keeps styling & color scheme same
+ */
 
 export default function ProjectDetailsPage() {
   const router = useRouter();
@@ -84,8 +93,18 @@ export default function ProjectDetailsPage() {
   const [joinStatus, setJoinStatus] = useState("loading");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // State to hold the function that runs commands in the terminal
+  // Terminal runner
   const [runInTerminal, setRunInTerminal] = useState(null);
+
+  // Fullscreen editor state
+  const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
+
+  // NEW: whether terminal is visible inside fullscreen overlay
+  // Default: false -> terminal hidden until user clicks "Run in Terminal"
+  const [isFullscreenTerminalVisible, setIsFullscreenTerminalVisible] =
+    useState(false);
+  // Refs
+  const editorContainerRef = useRef(null);
 
   // Fetch project data
   const fetchProject = async () => {
@@ -102,40 +121,30 @@ export default function ProjectDetailsPage() {
   useEffect(() => {
     setIsLoading(true);
     fetchProject().finally(() => setIsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // Determine user's status and set initial code
   useEffect(() => {
     if (project) {
-      if (project.codeContent) {
-        setCode(project.codeContent);
-      }
+      if (project.codeContent) setCode(project.codeContent);
       if (!loggedInUser) {
         setJoinStatus("not_logged_in");
         return;
       }
-      if (project.createdBy._id === loggedInUser._id) {
-        setJoinStatus("owner");
-      } else if (
-        project.members.some((member) => member._id === loggedInUser._id)
-      ) {
+      if (project.createdBy._id === loggedInUser._id) setJoinStatus("owner");
+      else if (project.members.some((m) => m._id === loggedInUser._id))
         setJoinStatus("member");
-      } else if (
-        project.joinRequests?.some((req) => req._id === loggedInUser._id)
-      ) {
+      else if (project.joinRequests?.some((r) => r._id === loggedInUser._id))
         setJoinStatus("requested");
-      } else {
-        setJoinStatus("can_request");
-      }
+      else setJoinStatus("can_request");
     }
   }, [project, loggedInUser]);
 
   // Presence (Active Users) Logic
   useEffect(() => {
     if (socket && project && loggedInUser) {
-      const handleUpdate = (users) => {
-        setActiveCollaborators(users);
-      };
+      const handleUpdate = (users) => setActiveCollaborators(users || []);
       socket.on("room_users_update", handleUpdate);
       socket.emit("join_project_room", {
         projectId: id,
@@ -161,7 +170,7 @@ export default function ProjectDetailsPage() {
     const debounceTimer = setTimeout(async () => {
       try {
         const { data } = await api.get(
-          `/users/search-for-invite?query=${searchQuery}`
+          `/users/search-for-invite?query=${encodeURIComponent(searchQuery)}`
         );
         setSearchResults(data);
       } catch (err) {
@@ -170,7 +179,7 @@ export default function ProjectDetailsPage() {
       } finally {
         setIsSearching(false);
       }
-    }, 500);
+    }, 400);
     return () => clearTimeout(debounceTimer);
   }, [searchQuery]);
 
@@ -267,15 +276,24 @@ export default function ProjectDetailsPage() {
     }
   };
 
+  // Loading / error / not found guards
   if (isLoading)
     return (
-      <div className="text-center text-white py-20">Loading Project...</div>
+      <div className="min-h-[60vh] flex items-center justify-center text-white py-20">
+        Loading Project...
+      </div>
     );
   if (error)
-    return <div className="text-center text-red-500 py-20">{error}</div>;
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center text-red-500 py-20">
+        {error}
+      </div>
+    );
   if (!project)
     return (
-      <div className="text-center text-white py-20">Project not found.</div>
+      <div className="min-h-[60vh] flex items-center justify-center text-white py-20">
+        Project not found.
+      </div>
     );
 
   const isOwner = loggedInUser?._id === project.createdBy._id;
@@ -283,312 +301,515 @@ export default function ProjectDetailsPage() {
     (member) => member._id === loggedInUser?._id
   );
 
+  // Copy-to-clipboard helper for code
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(code || "");
+      toast.success("Code copied to clipboard.");
+    } catch {
+      toast.error("Could not copy code.");
+    }
+  };
+
   return (
     <>
       <Toaster
         position="bottom-center"
         toastOptions={{ style: { background: "#333", color: "#fff" } }}
       />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex justify-between items-start">
-            <div className="space-y-2">
-              <Badge
-                variant="secondary"
-                className="bg-purple-600/20 text-purple-300 border-purple-500/50 mb-2"
-              >
-                {project.status}
-              </Badge>
-              <h1 className="text-4xl font-bold tracking-tighter">
-                {project.title}
-              </h1>
-              <div className="flex items-center gap-2 text-slate-400">
-                <span>Posted by</span>
-                <Link
-                  href={`/profile/${project.createdBy._id}`}
-                  className="flex items-center gap-2 hover:text-white"
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Top: Project header */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-6">
+          <div className="lg:col-span-2">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                <Badge
+                  variant="secondary"
+                  className="bg-purple-600/20 text-purple-300 border-purple-500/50 mb-2"
                 >
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage
-                      src={project.createdBy.avatarUrl}
-                      alt={project.createdBy.name}
-                    />
-                    <AvatarFallback>
-                      {project.createdBy.name.substring(0, 1)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium">{project.createdBy.name}</span>
-                </Link>
-              </div>
-              <div className="flex items-center gap-3 pt-2">
-                <div className="flex -space-x-2">
-                  {activeCollaborators.map((user) => (
-                    <Avatar
-                      key={user._id}
-                      className="h-8 w-8 rounded-full ring-2 ring-zinc-800"
-                      title={user.name}
-                    >
-                      <AvatarImage src={user.avatarUrl} alt={user.name} />
+                  {project.status}
+                </Badge>
+                <h1 className="text-4xl font-bold tracking-tight mb-1">
+                  {project.title}
+                </h1>
+                <div className="flex items-center gap-3 text-slate-400">
+                  <span>Posted by</span>
+                  <Link
+                    href={`/profile/${project.createdBy._id}`}
+                    className="flex items-center gap-2 hover:text-white"
+                  >
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage
+                        src={project.createdBy.avatarUrl}
+                        alt={project.createdBy.name}
+                      />
                       <AvatarFallback>
-                        {user.name.substring(0, 1)}
+                        {project.createdBy.name?.substring(0, 1)}
                       </AvatarFallback>
                     </Avatar>
-                  ))}
+                    <span className="font-medium">
+                      {project.createdBy.name}
+                    </span>
+                  </Link>
                 </div>
-                {activeCollaborators.length > 0 && (
-                  <p className="text-xs text-slate-400">
-                    {activeCollaborators.length}{" "}
-                    {activeCollaborators.length > 1
-                      ? "collaborators"
-                      : "collaborator"}{" "}
-                    online.
-                  </p>
-                )}
-              </div>
-            </div>
-            {isOwner && (
-              <Dialog
-                open={isInviteModalOpen}
-                onOpenChange={setIsInviteModalOpen}
-              >
-                <DialogTrigger asChild>
-                  <Button className="bg-purple-600 hover:bg-purple-700">
-                    <UserPlus className="mr-2 h-4 w-4" /> Invite
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
-                  <DialogHeader>
-                    <DialogTitle>Invite a Collaborator</DialogTitle>
-                    <DialogDescription>
-                      Search for a user by their name or email.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="relative my-4">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400" />
-                    <Input
-                      id="search"
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search..."
-                      className="pl-10 bg-zinc-800 border-zinc-700"
-                    />
+
+                <div className="flex items-center gap-3 pt-3">
+                  <div className="flex -space-x-2">
+                    {activeCollaborators.map((user) => (
+                      <Avatar
+                        key={user._id}
+                        className="h-8 w-8 rounded-full ring-2 ring-zinc-800"
+                        title={user.name}
+                      >
+                        <AvatarImage src={user.avatarUrl} alt={user.name} />
+                        <AvatarFallback>
+                          {user.name?.substring(0, 1)}
+                        </AvatarFallback>
+                      </Avatar>
+                    ))}
                   </div>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {isSearching && (
-                      <p className="text-zinc-400 text-center py-4">
-                        Searching...
-                      </p>
-                    )}
-                    {searchResults.length > 0
-                      ? searchResults.map((userResult) => (
-                          <div
-                            key={userResult._id}
-                            className="flex items-center justify-between p-2 rounded-md hover:bg-zinc-800"
-                          >
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-8 w-8">
-                                <AvatarImage src={userResult.avatarUrl} />
-                                <AvatarFallback>
-                                  {userResult.name.substring(0, 1)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-semibold">
-                                  {userResult.name}
-                                </p>
-                                <p className="text-xs text-zinc-400">
-                                  {userResult.email}
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              size="sm"
-                              onClick={() => handleSendInvite(userResult)}
-                              disabled={isInviting[userResult._id]}
-                            >
-                              {isInviting[userResult._id]
-                                ? "Sending..."
-                                : "Invite"}
-                            </Button>
-                          </div>
-                        ))
-                      : !isSearching &&
-                        searchQuery.length > 1 && (
+                  {activeCollaborators.length > 0 && (
+                    <p className="text-xs text-slate-400">
+                      {activeCollaborators.length}{" "}
+                      {activeCollaborators.length > 1
+                        ? "collaborators"
+                        : "collaborator"}{" "}
+                      online.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                {isOwner && (
+                  <Dialog
+                    open={isInviteModalOpen}
+                    onOpenChange={setIsInviteModalOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button className="bg-purple-600 hover:bg-purple-700">
+                        <UserPlus className="mr-2 h-4 w-4" /> Invite
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-zinc-900 border-zinc-800 text-white">
+                      <DialogHeader>
+                        <DialogTitle>Invite a Collaborator</DialogTitle>
+                        <DialogDescription>
+                          Search for a user by name or email.
+                        </DialogDescription>
+                      </DialogHeader>
+
+                      <div className="relative my-4">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400" />
+                        <Input
+                          id="search"
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search..."
+                          className="pl-10 bg-zinc-800 border-zinc-700"
+                        />
+                      </div>
+
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {isSearching && (
                           <p className="text-zinc-400 text-center py-4">
-                            No users found.
+                            Searching...
                           </p>
                         )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
+
+                        {searchResults.length > 0
+                          ? searchResults.map((userResult) => (
+                              <div
+                                key={userResult._id}
+                                className="flex items-center justify-between p-2 rounded-md hover:bg-zinc-800"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarImage src={userResult.avatarUrl} />
+                                    <AvatarFallback>
+                                      {userResult.name?.substring(0, 1)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-semibold">
+                                      {userResult.name}
+                                    </p>
+                                    <p className="text-xs text-zinc-400">
+                                      {userResult.email}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSendInvite(userResult)}
+                                  disabled={isInviting[userResult._id]}
+                                >
+                                  {isInviting[userResult._id]
+                                    ? "Sending..."
+                                    : "Invite"}
+                                </Button>
+                              </div>
+                            ))
+                          : !isSearching &&
+                            searchQuery.length > 1 && (
+                              <p className="text-zinc-400 text-center py-4">
+                                No users found.
+                              </p>
+                            )}
+                      </div>
+
+                      <DialogFooter>
+                        <Button onClick={() => setIsInviteModalOpen(false)}>
+                          Close
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                )}
+
+                <div>
+                  <Button
+                    asChild
+                    className="bg-zinc-700 hover:bg-zinc-600"
+                    aria-label="Open repo"
+                  >
+                    <Link
+                      href={project.githubRepo || "#"}
+                      target={project.githubRepo ? "_blank" : "_self"}
+                    >
+                      <Github className="mr-2 h-4 w-4" /> Repo
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <Card className="bg-zinc-900 border-zinc-800 text-white">
-            <CardHeader>
-              <CardTitle>Project Description</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-slate-300 whitespace-pre-wrap">
-                {project.description}
-              </p>
-            </CardContent>
-          </Card>
-
-          {(isOwner || isMember) && (
-            <div className="mt-6">
-              <h2 className="text-2xl font-bold tracking-tight text-white mb-4">
-                Live Workspace
-              </h2>
-              <ResizablePanelGroup
-                direction="vertical"
-                className="min-h-[80vh] w-full rounded-lg border border-zinc-700 bg-zinc-950"
-              >
-                <ResizablePanel defaultSize={65}>
-                  <CodeEditor
-                    value={code}
-                    onChange={setCode}
-                    projectId={project._id}
-                    projectData={project}
-                    onRunCommand={runInTerminal}
-                  />
-                </ResizablePanel>
-                <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={35}>
-                  <ProjectTerminal
-                    projectId={project._id}
-                    setTerminalRunner={setRunInTerminal}
-                  />
-                </ResizablePanel>
-              </ResizablePanelGroup>
-            </div>
-          )}
+          {/* Right column top card */}
+          <div className="lg:col-span-1">
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardContent className="py-4 px-4">
+                {renderJoinButton()}
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        <div className="lg:col-span-1 space-y-6">
-          <Card className="bg-zinc-900 border-zinc-800">
-            <CardContent className="pt-6">{renderJoinButton()}</CardContent>
-          </Card>
+        {/* Description & Live Workspace */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Description */}
+            <Card className="bg-zinc-900 border-zinc-800">
+              <CardHeader>
+                <CardTitle className={"text-white"}>
+                  Project Description
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-slate-300 whitespace-pre-wrap">
+                  {project.description}
+                </p>
+              </CardContent>
+            </Card>
 
-          {isOwner &&
-            project.joinRequests &&
-            project.joinRequests.length > 0 && (
-              <Card className="bg-zinc-900 border-purple-500/50 text-white">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between text-white">
-                    <span>Join Requests</span>
-                    <Badge className="bg-purple-600">
-                      {project.joinRequests.length}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {project.joinRequests.map((applicant) => (
-                    <div
-                      key={applicant._id}
-                      className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/50"
+            {/* Live Workspace header + toolbar */}
+            {(isOwner || isMember) && (
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-white">
+                    Live Workspace
+                  </h2>
+
+                  {/* Editor toolbar */}
+                  <div className="flex items-center gap-3">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      title="Copy code"
+                      onClick={handleCopyCode}
+                      className="bg-zinc-800/40 border border-zinc-700"
                     >
-                      <Link
-                        href={`/profile/${applicant._id}`}
-                        className="flex items-center gap-3 flex-1"
-                      >
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage
-                            src={applicant.avatarUrl}
-                            alt={applicant.name}
-                          />
-                          <AvatarFallback>
-                            {applicant.name.substring(0, 1)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-semibold text-white hover:underline">
-                            {applicant.name}
-                          </p>
-                        </div>
-                      </Link>
-                      <div className="flex gap-2">
+                      <Copy className="h-4 w-4 mr-2" />{" "}
+                      <span className="hidden sm:inline">Copy</span>
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      title="Toggle fullscreen editor"
+                      onClick={() => setIsEditorFullscreen(true)}
+                      className="bg-zinc-800/40 border border-zinc-700"
+                      aria-label="Open editor fullscreen"
+                    >
+                      <Maximize2 className="h-4 w-4 mr-2" />{" "}
+                      <span className="hidden sm:inline">Fullscreen</span>
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Resizable editor + terminal */}
+                {!isEditorFullscreen && (
+                  <ResizablePanelGroup
+                    direction="vertical"
+                    className="min-h-[68vh] w-full rounded-lg border border-zinc-700 bg-zinc-950 overflow-hidden"
+                  >
+                    <ResizablePanel defaultSize={68}>
+                      <div ref={editorContainerRef} className="h-full">
+                        <CodeEditor
+                          value={code}
+                          onChange={setCode}
+                          projectId={project._id}
+                          projectData={project}
+                          onRunCommand={runInTerminal}
+                          className="h-full"
+                        />
+                      </div>
+                    </ResizablePanel>
+
+                    <ResizableHandle withHandle />
+
+                    <ResizablePanel defaultSize={32} className="min-h-[160px]">
+                      <ProjectTerminal
+                        projectId={project._id}
+                        setTerminalRunner={setRunInTerminal}
+                      />
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                )}
+
+                {/* Fullscreen overlay for editor + terminal */}
+                {isEditorFullscreen && (
+                  <div className="fixed inset-0 z-50 bg-black/95 p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-semibold text-white">
+                          Editor — Fullscreen
+                        </h3>
+                        <span className="text-sm text-slate-400">
+                          {project.title}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
                         <Button
-                          onClick={() => handleAcceptRequest(applicant._id)}
                           size="sm"
-                          className="bg-green-600 hover:bg-green-700"
+                          variant="ghost"
+                          onClick={() => {
+                            setIsEditorFullscreen(false);
+                          }}
+                          className="bg-zinc-800/30 border border-zinc-700"
+                          aria-label="Exit fullscreen"
                         >
-                          <Check size={16} />
-                        </Button>
-                        <Button
-                          onClick={() => handleRejectRequest(applicant._id)}
-                          size="sm"
-                          variant="destructive"
-                        >
-                          <X size={16} />
+                          <Minimize2 className="h-4 w-4 mr-2" /> Close
                         </Button>
                       </div>
                     </div>
+
+                    {/* Fullscreen editor + terminal horizontal split with draggable handle */}
+                    <div className="h-[calc(100vh-88px)] bg-zinc-900 rounded-md overflow-hidden border border-zinc-800">
+                      <ResizablePanelGroup
+                        direction="horizontal"
+                        className="h-full"
+                      >
+                        {/* Editor panel - default 70% */}
+                        <ResizablePanel defaultSize={70} minSize={40}>
+                          <div className="h-full">
+                            <CodeEditor
+                              value={code}
+                              onChange={setCode}
+                              projectId={project._id}
+                              projectData={project}
+                              onRunCommand={runInTerminal}
+                              className="h-full"
+                            />
+                          </div>
+                        </ResizablePanel>
+
+                        {/* Vertical splitter */}
+                        <ResizableHandle withHandle className="h-full" />
+
+                        {/* Terminal panel - default 30% */}
+                        <ResizablePanel
+                          defaultSize={30}
+                          minSize={20}
+                          className="border-l border-zinc-800"
+                        >
+                          <div className="h-full flex flex-col">
+                            <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+                              <div>
+                                <h4 className="text-sm font-semibold text-white">
+                                  Project Terminal
+                                </h4>
+                                <p className="text-xs text-slate-400">
+                                  {project.title}
+                                </p>
+                              </div>
+                              <div className="text-xs text-slate-400">
+                                {activeCollaborators.length} online
+                              </div>
+                            </div>
+
+                            <div className="flex-1 overflow-hidden">
+                              {/* ProjectTerminal full version - height matches editor */}
+                              <div className="h-full">
+                                <ProjectTerminal
+                                  projectId={project._id}
+                                  setTerminalRunner={setRunInTerminal}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </ResizablePanel>
+                      </ResizablePanelGroup>
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <aside className="lg:col-span-1">
+            <div className="sticky top-24 space-y-6">
+              {/* Join requests (owner) */}
+              {isOwner &&
+                project.joinRequests &&
+                project.joinRequests.length > 0 && (
+                  <Card className="bg-zinc-900 border-purple-500/50 text-white">
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between text-white">
+                        <span>Join Requests</span>
+                        <Badge className="bg-purple-600">
+                          {project.joinRequests.length}
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {project.joinRequests.map((applicant) => (
+                        <div
+                          key={applicant._id}
+                          className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/50"
+                        >
+                          <Link
+                            href={`/profile/${applicant._id}`}
+                            className="flex items-center gap-3 flex-1"
+                          >
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage
+                                src={applicant.avatarUrl}
+                                alt={applicant.name}
+                              />
+                              <AvatarFallback>
+                                {applicant.name?.substring(0, 1)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-semibold text-white hover:underline">
+                                {applicant.name}
+                              </p>
+                              <p className="text-xs text-slate-400">
+                                {applicant.email}
+                              </p>
+                            </div>
+                          </Link>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => handleAcceptRequest(applicant._id)}
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <Check size={16} />
+                            </Button>
+                            <Button
+                              onClick={() => handleRejectRequest(applicant._id)}
+                              size="sm"
+                              variant="destructive"
+                            >
+                              <X size={16} />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+              {/* Project Links */}
+              {(project.githubRepo || project.liveUrl) && (
+                <Card className="bg-zinc-900 border-zinc-800 text-white">
+                  <CardHeader>
+                    <CardTitle>Project Links</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {project.githubRepo && (
+                      <a
+                        href={project.githubRepo}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 text-slate-300 hover:text-white"
+                      >
+                        <Github size={18} /> <span>GitHub Repository</span>
+                      </a>
+                    )}
+                    {project.liveUrl && (
+                      <a
+                        href={project.liveUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 text-slate-300 hover:text-white"
+                      >
+                        <ExternalLink size={18} /> <span>Live Demo</span>
+                      </a>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Team Members */}
+              <Card className="bg-zinc-900 border-zinc-800 text-white">
+                <CardHeader>
+                  <CardTitle>Team Members ({project.members.length})</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {project.members.map((member) => (
+                    <Link
+                      key={member._id}
+                      href={`/profile/${member._id}`}
+                      className="flex items-center gap-3 hover:bg-zinc-800 p-2 rounded-md transition-colors"
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={member.avatarUrl} alt={member.name} />
+                        <AvatarFallback>
+                          {member.name?.substring(0, 1)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold text-white">
+                          {member.name}
+                        </p>
+                        <p className="text-sm text-slate-400">
+                          {member.occupation || "Developer"}
+                        </p>
+                      </div>
+                    </Link>
                   ))}
                 </CardContent>
               </Card>
-            )}
 
-          {(project.githubRepo || project.liveUrl) && (
-            <Card className="bg-zinc-900 border-zinc-800 text-white">
-              <CardHeader>
-                <CardTitle>Project Links</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {project.githubRepo && (
-                  <a
-                    href={project.githubRepo}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 text-slate-300 hover:text-white"
-                  >
-                    <Github size={20} /> <span>GitHub Repository</span>
-                  </a>
-                )}
-                {project.liveUrl && (
-                  <a
-                    href={project.liveUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 text-slate-300 hover:text-white"
-                  >
-                    <ExternalLink size={20} /> <span>Live Demo</span>
-                  </a>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="bg-zinc-900 border-zinc-800 text-white">
-            <CardHeader>
-              <CardTitle>Team Members ({project.members.length})</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {project.members.map((member) => (
-                <Link
-                  key={member._id}
-                  href={`/profile/${member._id}`}
-                  className="flex items-center gap-3 hover:bg-zinc-800 p-2 rounded-md transition-colors"
-                >
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={member.avatarUrl} alt={member.name} />
-                    <AvatarFallback>
-                      {member.name.substring(0, 1)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold text-white">{member.name}</p>
-                    <p className="text-sm text-slate-400">
-                      {member.occupation || "Developer"}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </CardContent>
-          </Card>
-
-          {isMember && <ProjectChat projectId={project._id} />}
+              {/* Chat (if member) */}
+              {isMember && (
+                <Card className="bg-zinc-900 border-zinc-800">
+                  {/* <CardHeader>
+                    <CardTitle>Project Chat</CardTitle>
+                  </CardHeader> */}
+                  <CardContent>
+                    <ProjectChat projectId={project._id} compact />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </aside>
         </div>
       </div>
     </>
