@@ -1,5 +1,3 @@
-// server/src/models/project.model.js
-
 import mongoose from "mongoose";
 
 const projectSchema = new mongoose.Schema(
@@ -67,7 +65,7 @@ const projectSchema = new mongoose.Schema(
       default: "active",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 projectSchema.index({

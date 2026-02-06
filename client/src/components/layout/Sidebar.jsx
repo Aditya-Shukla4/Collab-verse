@@ -1,5 +1,3 @@
-// client/src/components/layout/Sidebar.jsx
-
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/router";
@@ -21,7 +19,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
   if (!user) return null;
 
-  // FIX: Safely handle arrays with fallbacks
   const receivedRequests = Array.isArray(user.receivedCollabRequests)
     ? user.receivedCollabRequests.length
     : 0;
@@ -44,7 +41,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
 
   return (
     <>
-      {/* Overlay for mobile - only show when sidebar is open */}
       <div
         onClick={toggleSidebar}
         className={`fixed inset-0 bg-black/60 z-30 transition-opacity duration-300 lg:hidden ${
@@ -52,7 +48,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
         }`}
       />
 
-      {/* Sidebar - slides in from left on all screen sizes */}
       <aside
         className={`fixed left-0 top-0 z-40 h-screen w-64 border-r border-zinc-800 bg-zinc-950/95 backdrop-blur-lg text-white flex flex-col transition-transform duration-300 ease-in-out
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
@@ -78,7 +73,6 @@ export default function Sidebar({ isOpen, toggleSidebar }) {
                 <Link
                   href={link.href}
                   onClick={() => {
-                    // Only auto-close on mobile
                     if (window.innerWidth < 1024) toggleSidebar();
                   }}
                   className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-zinc-800 ${

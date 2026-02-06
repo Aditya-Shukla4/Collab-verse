@@ -1,8 +1,5 @@
-// server/src/routes/auth.routes.js
-
 import express from "express";
 import passport from "passport";
-import { protect } from "../middleware/auth.middleware.js";
 
 import {
   register,

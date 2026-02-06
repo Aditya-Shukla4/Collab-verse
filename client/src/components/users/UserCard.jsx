@@ -1,17 +1,14 @@
-// client/src/components/users/UserCard.jsx
-
 import Link from "next/link";
 import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react"; // Make sure you've installed lucide-react
+import { Sparkles } from "lucide-react";
 
-// A helper object for icons (you can expand this with more skills)
 const techIcons = {
   react: "⚛️",
   "node.js": "🟢",
-  nextjs: "🔘", // Changed to 'nextjs' to be safe
+  nextjs: "🔘",
   mongodb: "🍃",
   javascript: "🟡",
   python: "🐍",
@@ -31,7 +28,6 @@ const UserCard = ({ dev }) => {
 
   return (
     <Card className="bg-zinc-900 border border-zinc-800 text-white flex flex-col h-full p-6 transition-all duration-300 hover:border-purple-500 hover:shadow-lg hover:shadow-purple-900/20 group">
-      {/* --- AVATAR & NAME SECTION --- */}
       <div className="flex items-center gap-4 mb-4">
         <Avatar className="h-14 w-14 border-2 border-zinc-700 group-hover:border-purple-400 transition-colors">
           <AvatarImage src={dev.avatarUrl} alt={dev.name} />
@@ -47,7 +43,6 @@ const UserCard = ({ dev }) => {
         </div>
       </div>
 
-      {/* --- COLLABORATION STATUS BADGE --- */}
       <div className="mb-4">
         <Badge
           className={`font-normal ${getStatusClass(dev.collaborationStatus)}`}
@@ -57,7 +52,6 @@ const UserCard = ({ dev }) => {
         </Badge>
       </div>
 
-      {/* --- TECH STACK WITH ICONS --- */}
       <div className="mb-4">
         <h3 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold mb-2">
           Top Skills

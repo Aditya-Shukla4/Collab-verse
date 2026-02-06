@@ -9,11 +9,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import toast, { Toaster } from "react-hot-toast";
 
-// Components
 import ProjectChat from "@/components/projects/ProjectChat";
 import CodeEditor from "@/components/projects/CodeEditor";
 
-// Dynamic import for client-side only components
 const ProjectTerminal = dynamic(
   () => import("@/components/projects/ProjectTerminal"),
   {
@@ -23,10 +21,9 @@ const ProjectTerminal = dynamic(
         Loading Terminal...
       </div>
     ),
-  }
+  },
 );
 
-// UI
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -43,10 +40,8 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Github,
   ExternalLink,
@@ -57,7 +52,6 @@ import {
   X,
   UserPlus,
   Search,
-  TerminalSquare,
 } from "lucide-react";
 
 export default function ProjectDetailsPage() {
@@ -66,13 +60,13 @@ export default function ProjectDetailsPage() {
   const { user: loggedInUser } = useAuth();
   const socket = useSocket();
 
-  // Project states
+  //! Project states
   const [project, setProject] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [code, setCode] = useState("");
 
-  // Collaboration states
+  //! Collaboration states
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isInviting, setIsInviting] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,14 +74,12 @@ export default function ProjectDetailsPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [activeCollaborators, setActiveCollaborators] = useState([]);
 
-  // Join request states
+  //! Join request states
   const [joinStatus, setJoinStatus] = useState("loading");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // State to hold the function that runs commands in the terminal
   const [runInTerminal, setRunInTerminal] = useState(null);
 
-  // Fetch project data
   const fetchProject = async () => {
     if (!id) return;
     try {
@@ -104,7 +96,6 @@ export default function ProjectDetailsPage() {
     fetchProject().finally(() => setIsLoading(false));
   }, [id]);
 
-  // Determine user's status and set initial code
   useEffect(() => {
     if (project) {
       if (project.codeContent) {
@@ -130,7 +121,6 @@ export default function ProjectDetailsPage() {
     }
   }, [project, loggedInUser]);
 
-  // Presence (Active Users) Logic
   useEffect(() => {
     if (socket && project && loggedInUser) {
       const handleUpdate = (users) => {
@@ -151,7 +141,6 @@ export default function ProjectDetailsPage() {
     }
   }, [socket, id, project, loggedInUser]);
 
-  // Search & Invite Logic
   useEffect(() => {
     if (searchQuery.trim().length < 2) {
       setSearchResults([]);
@@ -161,7 +150,7 @@ export default function ProjectDetailsPage() {
     const debounceTimer = setTimeout(async () => {
       try {
         const { data } = await api.get(
-          `/users/search-for-invite?query=${searchQuery}`
+          `/users/search-for-invite?query=${searchQuery}`,
         );
         setSearchResults(data);
       } catch (err) {
@@ -191,7 +180,6 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  // Join Request Handlers
   const handleRequestToJoin = async () => {
     setIsSubmitting(true);
     try {
@@ -280,7 +268,7 @@ export default function ProjectDetailsPage() {
 
   const isOwner = loggedInUser?._id === project.createdBy._id;
   const isMember = project.members.some(
-    (member) => member._id === loggedInUser?._id
+    (member) => member._id === loggedInUser?._id,
   );
 
   return (

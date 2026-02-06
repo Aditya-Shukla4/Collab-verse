@@ -50,10 +50,9 @@ export default function ProjectTerminal({ projectId, setTerminalRunner }) {
 
       const commandRunner = (command, callback) => {
         if (socket.connected) {
-          term.write("\x1b[2J\x1b[H"); // Clear screen
-          currentCallback = callback; // Callback ko store kar lo
+          term.write("\x1b[2J\x1b[H");
+          currentCallback = callback;
 
-          // Command ke aakhir me completion signal daal kar bhejo
           const commandWithSignal = `${command.slice(
             0,
             -1
@@ -67,16 +66,14 @@ export default function ProjectTerminal({ projectId, setTerminalRunner }) {
     const onDataHandler = (data) => term.write(data);
     socket.on("terminal:data", onDataHandler);
 
-    // Jab backend se 'cmd_done' ka signal aaye, tab callback chalao
     const onCmdDoneHandler = () => {
       if (currentCallback) {
         currentCallback();
-        currentCallback = null; // Callback ko reset kar do taaki baar-baar na chale
+        currentCallback = null;
       }
     };
     socket.on("terminal:cmd_done", onCmdDoneHandler);
 
-    // Jab user type kare, toh raw data bhejo, bina signal ke
     const onUserInput = term.onData((data) => {
       socket.emit("terminal:write", { projectId, data });
     });
@@ -87,19 +84,16 @@ export default function ProjectTerminal({ projectId, setTerminalRunner }) {
       setTerminalRunner(null);
     });
 
-    // --- Cleanup ---
     return () => {
       resizeObserver.disconnect();
       socket.disconnect();
-      socket.off("terminal:cmd_done", onCmdDoneHandler); // Listener ko aache se hatao
+      socket.off("terminal:cmd_done", onCmdDoneHandler);
       onUserInput.dispose();
       term.dispose();
     };
   }, [projectId, setTerminalRunner]);
 
   return (
-    <div className="bg-[#1a1b26] p-2 h-full w-full" ref={terminalRef}>
-      {/* Terminal renders here */}
-    </div>
+    <div className="bg-[#1a1b26] p-2 h-full w-full" ref={terminalRef}></div>
   );
 }

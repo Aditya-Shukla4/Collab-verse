@@ -1,25 +1,16 @@
-// client/src/components/layout/Header.jsx
-import { Menu, PlusCircle, Search } from "lucide-react";
+import { Menu, PlusCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import useSearchStore from "@/store/searchStore";
-import { useRouter } from "next/router";
 import { useRef, useEffect } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Header({ toggleSidebar, isSidebarOpen }) {
-  const {
-    query,
-    setQuery,
-    suggestions,
-    isLoading,
-    clearSuggestions,
-    fetchSuggestions,
-  } = useSearchStore();
+  const { query, setQuery, suggestions, clearSuggestions, fetchSuggestions } =
+    useSearchStore();
   const containerRef = useRef();
 
-  // Debounce logic for fetching suggestions
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchSuggestions(query);
@@ -27,7 +18,6 @@ export default function Header({ toggleSidebar, isSidebarOpen }) {
     return () => clearTimeout(timer);
   }, [query, fetchSuggestions]);
 
-  // Click outside to close suggestions
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -45,7 +35,6 @@ export default function Header({ toggleSidebar, isSidebarOpen }) {
 
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between gap-4 p-4 bg-zinc-950 border-b border-zinc-800 backdrop-blur-lg">
-      {/* Left side */}
       <div className="flex items-center gap-4">
         <Button
           onClick={toggleSidebar}
@@ -71,7 +60,6 @@ export default function Header({ toggleSidebar, isSidebarOpen }) {
         )}
       </div>
 
-      {/* Center/Right side */}
       <div className="flex items-center gap-2 md:gap-4">
         <div className="relative" ref={containerRef}>
           <input
@@ -83,7 +71,7 @@ export default function Header({ toggleSidebar, isSidebarOpen }) {
           {suggestions.length > 0 && (
             <div className="absolute left-0 mt-2 w-80 bg-zinc-900 border border-zinc-800 rounded-md shadow-lg z-50">
               {suggestions.map((s) => {
-                const isProject = !s.occupation; // Simple check
+                const isProject = !s.occupation;
                 return (
                   <Link
                     key={s._id}

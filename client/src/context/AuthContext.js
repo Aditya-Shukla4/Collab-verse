@@ -9,7 +9,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // This is the only function that should ever fetch the user's own profile.
   const fetchAndSetUser = async () => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -17,7 +16,6 @@ export const AuthProvider = ({ children }) => {
       try {
         const { data } = await api.get("/users/me");
 
-        // FIX: Ensure these arrays always exist
         const userData = {
           ...data,
           receivedCollabRequests: Array.isArray(data.receivedCollabRequests)
@@ -115,7 +113,7 @@ export const AuthProvider = ({ children }) => {
     signup,
     socialLogin,
     logout,
-    refetchUser: fetchAndSetUser, // We are using this reliable function again
+    refetchUser: fetchAndSetUser,
   };
 
   return (

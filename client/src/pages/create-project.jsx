@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import api from "@/api/axios";
 import { useAuth } from "@/context/AuthContext";
-import toast, { Toaster } from "react-hot-toast"; // Toast notifications ke liye
+import toast, { Toaster } from "react-hot-toast";
 
-// Shadcn UI Components
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -31,7 +30,6 @@ export default function CreateProjectPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Page protection ka sahi tareeka
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push("/LoginPage");
@@ -63,7 +61,6 @@ export default function CreateProjectPage() {
       const response = await api.post("/projects", projectData);
       toast.success("Project Created Successfully!");
 
-      // Redirect to the new project's detail page
       router.push(`/projects/${response.data._id}`);
     } catch (err) {
       const errorMessage =
@@ -74,7 +71,6 @@ export default function CreateProjectPage() {
     }
   };
 
-  // Jab tak auth check ho raha hai, loading dikhao
   if (authLoading || !isAuthenticated) {
     return (
       <div className="flex justify-center items-center h-screen text-white bg-zinc-950">

@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
-// Dedicated Navbar for this page
 const LandingNavbar = () => (
   <header className="flex flex-col sm:flex-row items-center justify-between w-full py-4 px-8 bg-black text-white gap-4">
     <div className="flex items-center gap-3">
@@ -277,7 +276,6 @@ export default function LandingPage() {
   );
 }
 
-// Tell Next.js not to use the main app layout for this page
 LandingPage.getLayout = function getLayout(page) {
   return page;
 };

@@ -1,14 +1,10 @@
-// client/src/components/layout/Layout.jsx
-
 import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
 
 export default function Layout({ children }) {
-  // Always start with sidebar CLOSED - simple and clean
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Function to toggle the state
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };

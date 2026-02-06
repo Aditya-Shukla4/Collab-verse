@@ -2,12 +2,10 @@ import { useState, useEffect } from "react";
 import useSearchStore from "@/store/searchStore";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import api from "@/api/axios";
 import Link from "next/link";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Code, User } from "lucide-react";
 
-// This component will show each search result item
 const SearchResultItem = ({ result, closeSearch }) => {
   const isProject = result._type === "project";
 
@@ -50,9 +48,7 @@ export default function SearchModal() {
     clearAll,
   } = useSearchStore();
 
-  // This logic runs every time the user types in the search bar
   useEffect(() => {
-    // Debounce to prevent API calls on every keystroke
     const debounceTimer = setTimeout(() => {
       fetchSuggestions(query);
     }, 300);
@@ -60,7 +56,6 @@ export default function SearchModal() {
     return () => clearTimeout(debounceTimer);
   }, [query, fetchSuggestions]);
 
-  // Reset everything when the modal is closed
   useEffect(() => {
     if (!isOpen) {
       clearAll();

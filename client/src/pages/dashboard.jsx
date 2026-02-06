@@ -8,7 +8,6 @@ import useSearchStore from "@/store/searchStore";
 import ProjectCard from "@/components/projects/ProjectCard";
 import UserCard from "@/components/users/UserCard";
 
-// UI Components
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Carousel,
@@ -47,7 +46,6 @@ export default function DashboardPage() {
       try {
         const queryParam = encodeURIComponent(universalQuery?.trim() || "");
 
-        // 💥 FIX IS HERE: URL ko /users se /users/search kar diya 💥
         const usersUrl = `/users/search?query=${queryParam}`;
         const projectsUrl = "/projects";
 
@@ -60,7 +58,7 @@ export default function DashboardPage() {
         setUsers(
           currentUserId
             ? usersResponse.data.filter((u) => u._id !== currentUserId)
-            : usersResponse.data
+            : usersResponse.data,
         );
         setProjects(projectsResponse.data);
       } catch (error) {

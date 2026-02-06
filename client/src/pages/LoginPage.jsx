@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useAuth } from "@/context/AuthContext"; // CORRECT: Central auth brain
+import { useAuth } from "@/context/AuthContext";
 
-// YOUR beautiful UI components & icons
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,25 +18,22 @@ import { Eye, EyeOff, Github } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth(); // CORRECT: The only login function we will ever use
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  // YOUR cool UI feature
   const [showPassword, setShowPassword] = useState(false);
 
-  // CORRECT: The handleLogin function uses the central 'login' from context
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      await login(email, password); // One line to rule them all
+      await login(email, password);
     } catch (err) {
       setError(
-        err.response?.data?.message || "Login failed. Please try again."
+        err.response?.data?.message || "Login failed. Please try again.",
       );
       setLoading(false);
     }
@@ -63,7 +59,6 @@ export default function LoginPage() {
     window.location.href = googleUrl;
   };
 
-  // YOUR beautiful UI, now powered by the correct logic
   return (
     <main
       className="flex flex-col items-center justify-center p-4"

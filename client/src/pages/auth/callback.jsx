@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function AuthCallback() {
   const router = useRouter();
-  // Use socialLogin instead of login for OAuth callbacks
+  // ! Use of social login
   const { socialLogin } = useAuth();
 
   useEffect(() => {
@@ -13,9 +13,7 @@ export default function AuthCallback() {
         const token = router.query.token;
 
         try {
-          // socialLogin handles OAuth tokens correctly
           await socialLogin(token);
-          // socialLogin already handles the redirect logic
         } catch (error) {
           console.error("Authentication callback failed:", error);
           router.push("/LoginPage?error=auth_failed");

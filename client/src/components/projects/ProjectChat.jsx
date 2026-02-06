@@ -1,5 +1,3 @@
-// client/src/components/projects/ProjectChat.jsx
-
 import { useState, useEffect } from "react";
 import { useSocket } from "@/context/SocketContext";
 import { useAuth } from "@/context/AuthContext";
@@ -16,17 +14,14 @@ export default function ProjectChat({ projectId }) {
   useEffect(() => {
     if (!socket || !projectId) return;
 
-    // 1. Join the project's room on the server
     socket.emit("join_project_room", projectId);
     console.log(`Attempting to join room: ${projectId}`);
 
-    // 2. Listen for incoming messages
     const handleReceiveMessage = (message) => {
       setMessages((prevMessages) => [...prevMessages, message]);
     };
     socket.on("receive_message", handleReceiveMessage);
 
-    // 3. Cleanup on component unmount
     return () => {
       socket.off("receive_message", handleReceiveMessage);
     };
@@ -46,10 +41,8 @@ export default function ProjectChat({ projectId }) {
       timestamp: new Date(),
     };
 
-    // Send message to the server
     socket.emit("send_message", messageData);
 
-    // Add your own message to the chat immediately
     setMessages((prevMessages) => [...prevMessages, messageData]);
     setNewMessage("");
   };

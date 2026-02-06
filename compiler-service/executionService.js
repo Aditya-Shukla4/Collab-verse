@@ -1,5 +1,3 @@
-// compiler-service/executionService.js (FINAL, ROBUST VERSION)
-
 import { promises as fs } from "fs";
 import { exec } from "child_process";
 import path from "path";
@@ -12,9 +10,7 @@ const initializeTempDir = async () => {
 };
 initializeTempDir();
 
-// --- PYTHON EXECUTION (Unchanged) ---
 const runPython = async (code, input) => {
-  // ... (This function is correct from the last fix, keeping it for completeness)
   const uniqueId =
     Date.now().toString() + Math.random().toString(36).substring(2, 8);
   const codeFileName = path.join(TEMP_DIR, `${uniqueId}.py`);
@@ -39,7 +35,7 @@ const runPython = async (code, input) => {
             return reject({ error: stderr || stdout || error.message });
           }
           resolve({ stdout, stderr });
-        }
+        },
       );
     });
     if (stderr) return { error: stderr };
@@ -60,14 +56,13 @@ const runPython = async (code, input) => {
       } catch (cleanupErr) {
         console.error(
           `Failed to clean up Python files for ID ${uniqueId}:`,
-          cleanupErr
+          cleanupErr,
         );
       }
     }
   }
 };
 
-// --- C++ EXECUTION (FIXED) ---
 const runCpp = async (code, input) => {
   const uniqueId =
     Date.now().toString() + Math.random().toString(36).substring(2, 8);
@@ -81,9 +76,8 @@ const runCpp = async (code, input) => {
     await fs.writeFile(inputFileName, input);
     filesCreated = true;
 
-    // 1. COMPILE
     const compileCommand = `g++ ${path.basename(
-      codeFileName
+      codeFileName,
     )} -o ${path.basename(executableFileName)}`;
     await new Promise((resolve, reject) => {
       exec(
@@ -94,17 +88,14 @@ const runCpp = async (code, input) => {
             return reject({ error: stderr || "Compilation Failed." });
           }
           resolve();
-        }
+        },
       );
     });
 
-    // 💥 FIX #1: SET EXECUTE PERMISSIONS 💥
     await fs.chmod(executableFileName, 0o755);
 
-    // 2. EXECUTE
-    // 💥 FIX #2: USE RELATIVE PATHS AND SET CWD 💥
     const runCommand = `./${path.basename(
-      executableFileName
+      executableFileName,
     )} < ./${path.basename(inputFileName)}`;
     const { stdout, stderr } = await new Promise((resolve, reject) => {
       exec(
@@ -120,7 +111,7 @@ const runCpp = async (code, input) => {
             return reject({ error: stderr || stdout || error.message });
           }
           resolve({ stdout, stderr });
-        }
+        },
       );
     });
 
@@ -145,14 +136,13 @@ const runCpp = async (code, input) => {
       } catch (cleanupErr) {
         console.error(
           `Failed to clean up C++ files for ID ${uniqueId}:`,
-          cleanupErr
+          cleanupErr,
         );
       }
     }
   }
 };
 
-// --- C EXECUTION (FIXED) ---
 const runC = async (code, input) => {
   const uniqueId =
     Date.now().toString() + Math.random().toString(36).substring(2, 8);
@@ -166,9 +156,8 @@ const runC = async (code, input) => {
     await fs.writeFile(inputFileName, input);
     filesCreated = true;
 
-    // 1. COMPILE
     const compileCommand = `gcc ${path.basename(
-      codeFileName
+      codeFileName,
     )} -o ${path.basename(executableFileName)}`;
     await new Promise((resolve, reject) => {
       exec(
@@ -179,17 +168,14 @@ const runC = async (code, input) => {
             return reject({ error: stderr || "Compilation Failed." });
           }
           resolve();
-        }
+        },
       );
     });
 
-    // 💥 FIX #1: SET EXECUTE PERMISSIONS 💥
     await fs.chmod(executableFileName, 0o755);
 
-    // 2. EXECUTE
-    // 💥 FIX #2: USE RELATIVE PATHS AND SET CWD 💥
     const runCommand = `./${path.basename(
-      executableFileName
+      executableFileName,
     )} < ./${path.basename(inputFileName)}`;
     const { stdout, stderr } = await new Promise((resolve, reject) => {
       exec(
@@ -205,7 +191,7 @@ const runC = async (code, input) => {
             return reject({ error: stderr || stdout || error.message });
           }
           resolve({ stdout, stderr });
-        }
+        },
       );
     });
 
@@ -230,16 +216,14 @@ const runC = async (code, input) => {
       } catch (cleanupErr) {
         console.error(
           `Failed to clean up C files for ID ${uniqueId}:`,
-          cleanupErr
+          cleanupErr,
         );
       }
     }
   }
 };
 
-// --- JAVA EXECUTION (Unchanged) ---
 const runJava = async (code, input) => {
-  // ... (This function is correct from the last fix, keeping it for completeness)
   const uniqueId =
     Date.now().toString() + Math.random().toString(36).substring(2, 8);
   const workDir = path.join(TEMP_DIR, uniqueId);
@@ -261,7 +245,7 @@ const runJava = async (code, input) => {
             return reject({ error: stderr || "Compilation Failed." });
           }
           resolve();
-        }
+        },
       );
     });
     const runCommand = `java Main < input.txt`;
@@ -279,7 +263,7 @@ const runJava = async (code, input) => {
             return reject({ error: stderr || stdout || error.message });
           }
           resolve({ stdout, stderr });
-        }
+        },
       );
     });
     return { result: stdout.trim() };
@@ -299,7 +283,7 @@ const runJava = async (code, input) => {
       } catch (cleanupErr) {
         console.error(
           `Failed to clean up Java files for ID ${uniqueId}:`,
-          cleanupErr
+          cleanupErr,
         );
       }
     }
@@ -331,11 +315,10 @@ const runGo = async (code, input) => {
                 error: `Execution Timeout: Code ran longer than ${EXECUTION_TIMEOUT}ms.`,
               });
             }
-            // Go compiler errors go to stderr
             return reject({ error: stderr || stdout || error.message });
           }
           resolve({ stdout, stderr });
-        }
+        },
       );
     });
 
@@ -357,7 +340,7 @@ const runGo = async (code, input) => {
       } catch (cleanupErr) {
         console.error(
           `Failed to clean up Go files for ID ${uniqueId}:`,
-          cleanupErr
+          cleanupErr,
         );
       }
     }
@@ -389,11 +372,10 @@ const runPhp = async (code, input) => {
                 error: `Execution Timeout: Code ran longer than ${EXECUTION_TIMEOUT}ms.`,
               });
             }
-            // PHP parse/fatal errors go to stderr
             return reject({ error: stderr || stdout || error.message });
           }
           resolve({ stdout, stderr });
-        }
+        },
       );
     });
 
@@ -415,7 +397,7 @@ const runPhp = async (code, input) => {
       } catch (cleanupErr) {
         console.error(
           `Failed to clean up PHP files for ID ${uniqueId}:`,
-          cleanupErr
+          cleanupErr,
         );
       }
     }
@@ -427,7 +409,7 @@ const runRust = async (code, input) => {
     Date.now().toString() + Math.random().toString(36).substring(2, 8);
   const codeFileName = path.join(TEMP_DIR, `${uniqueId}.rs`);
   const inputFileName = path.join(TEMP_DIR, `${uniqueId}.txt`);
-  const executableFileName = path.join(TEMP_DIR, uniqueId); // Rust outputs a plain executable
+  const executableFileName = path.join(TEMP_DIR, uniqueId);
   let filesCreated = false;
 
   try {
@@ -435,9 +417,8 @@ const runRust = async (code, input) => {
     await fs.writeFile(inputFileName, input);
     filesCreated = true;
 
-    // 1. COMPILE
     const compileCommand = `rustc ${path.basename(
-      codeFileName
+      codeFileName,
     )} -o ${path.basename(executableFileName)}`;
     await new Promise((resolve, reject) => {
       exec(
@@ -448,16 +429,14 @@ const runRust = async (code, input) => {
             return reject({ error: stderr || "Compilation Failed." });
           }
           resolve();
-        }
+        },
       );
     });
 
-    // Set execute permissions on the compiled binary
     await fs.chmod(executableFileName, 0o755);
 
-    // 2. EXECUTE
     const runCommand = `./${path.basename(
-      executableFileName
+      executableFileName,
     )} < ./${path.basename(inputFileName)}`;
     const { stdout, stderr } = await new Promise((resolve, reject) => {
       exec(
@@ -473,7 +452,7 @@ const runRust = async (code, input) => {
             return reject({ error: stderr || stdout || error.message });
           }
           resolve({ stdout, stderr });
-        }
+        },
       );
     });
 
@@ -498,13 +477,11 @@ const runRust = async (code, input) => {
       } catch (cleanupErr) {
         console.error(
           `Failed to clean up Rust files for ID ${uniqueId}:`,
-          cleanupErr
+          cleanupErr,
         );
       }
     }
   }
 };
-
-// Make sure you have all the other run functions here
 
 export { runPython, runCpp, runC, runJava, runGo, runPhp, runRust };

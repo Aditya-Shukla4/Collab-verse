@@ -29,7 +29,6 @@ export const register = async (req, res) => {
     });
     await newUser.save();
 
-    // ✅ THE FIX: Payload is now flat.
     const payload = { id: newUser.id };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
@@ -63,7 +62,6 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    // ✅ THE FIX: Payload is now flat.
     const payload = { id: user.id };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
@@ -78,12 +76,11 @@ export const login = async (req, res) => {
 };
 
 export const githubCallback = (req, res) => {
-  // ✅ THE FIX: Payload is now flat.
   const payload = { id: req.user.id };
 
   const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "5h" });
 
-  const redirectUrl = process.env.CLIENT_URL; // Simple aur consistent
+  const redirectUrl = process.env.CLIENT_URL;
 
   res.redirect(`${redirectUrl}/auth/callback?token=${token}`);
 };

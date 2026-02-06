@@ -76,8 +76,6 @@ export default function CodeEditor({
     const createFileAndRun = (fileName, runCmd, cleanupCmd) => {
       const cleanup = cleanupCmd || `rm -f ${fileName}`;
 
-      // 💥 FIX: Use btoa() for browser-safe Base64 encoding 💥
-      // Buffer does not exist in the browser. We also handle Unicode correctly.
       const base64Code = btoa(unescape(encodeURIComponent(value)));
 
       const shellScript = `echo '${base64Code}' | base64 -d > ${fileName} && ${runCmd} && ${cleanup}`;
@@ -139,7 +137,7 @@ export default function CodeEditor({
 
       const timeoutId = setTimeout(() => {
         setIsRunning(false);
-      }, 30000); // 30 second timeout
+      }, 30000);
 
       onRunCommand(command, () => {
         clearTimeout(timeoutId);

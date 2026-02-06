@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useAuth } from "@/context/AuthContext"; // CORRECT: Import the central brain
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,29 +17,26 @@ import { Eye, EyeOff, Github } from "lucide-react";
 
 export default function SignupPage() {
   const router = useRouter();
-  const { signup } = useAuth(); // CORRECT: Get the new signup function
+  const { signup } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState(""); // Your 'confirm password' state
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // Your 'show password' state
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSignup = async (e) => {
     e.preventDefault();
     setError(null);
 
-    // Your password match check (improved to use state instead of alert)
     if (password !== confirmPassword) {
       setError("Passwords do not match!");
       return;
     }
     setLoading(true);
     try {
-      // THE FIX: Use the context's signup function. It handles everything.
       await signup(name, email, password);
-      // On success, redirect to the profile creation page.
       router.push("/create-profile");
     } catch (err) {
       const errorMessage =
@@ -69,7 +66,6 @@ export default function SignupPage() {
     window.location.href = googleUrl;
   };
 
-  // YOUR SUPERIOR UI, now powered by the correct logic
   return (
     <main
       className="flex flex-col items-center justify-center p-4"

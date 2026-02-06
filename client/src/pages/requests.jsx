@@ -57,7 +57,7 @@ export default function RequestsPage() {
     try {
       await api.put(`/collabs/requests/${senderId}/accept`);
       setColleagueRequests((current) =>
-        current.filter((req) => req._id !== senderId)
+        current.filter((req) => req._id !== senderId),
       );
       await refetchUser();
       toast.success("Request accepted!", { id: toastId });
@@ -71,7 +71,7 @@ export default function RequestsPage() {
     try {
       await api.delete(`/collabs/requests/${senderId}/reject`);
       setColleagueRequests((current) =>
-        current.filter((req) => req._id !== senderId)
+        current.filter((req) => req._id !== senderId),
       );
       await refetchUser();
       toast.success("Request rejected.", { id: toastId });
@@ -85,7 +85,7 @@ export default function RequestsPage() {
     try {
       await api.put(`/collabs/invitations/${invitationId}/accept`);
       setProjectInvites((current) =>
-        current.filter((inv) => inv._id !== invitationId)
+        current.filter((inv) => inv._id !== invitationId),
       );
       await refetchUser();
       toast.success("Project invite accepted!", { id: toastId });
@@ -99,7 +99,7 @@ export default function RequestsPage() {
     try {
       await api.delete(`/collabs/invitations/${invitationId}/reject`);
       setProjectInvites((current) =>
-        current.filter((inv) => inv._id !== invitationId)
+        current.filter((inv) => inv._id !== invitationId),
       );
       await refetchUser();
       toast.success("Project invite rejected.", { id: toastId });
@@ -157,7 +157,6 @@ export default function RequestsPage() {
                         Invitation from {invite.owner?.name || "Unknown User"}
                       </CardDescription>
                     </CardHeader>
-                    {/* --- 💥 ASLI FIX YAHAN HAI 💥 --- */}
                     <CardContent className="flex flex-col space-y-2">
                       <Button
                         onClick={() => handleAcceptInvite(invite._id)}

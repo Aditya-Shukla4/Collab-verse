@@ -1,4 +1,3 @@
-// client/src/store/searchStore.js
 import { create } from "zustand";
 import api from "@/api/axios";
 

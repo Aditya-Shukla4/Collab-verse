@@ -6,7 +6,6 @@ import passport from "passport";
 import { createServer } from "http";
 import { Server } from "socket.io";
 
-// Route Imports
 import userRoutes from "./src/routes/user.routes.js";
 import projectRoutes from "./src/routes/project.routes.js";
 import collabRoutes from "./src/routes/collab.routes.js";
@@ -21,18 +20,16 @@ const PORT = process.env.PORT || 5000;
 const clientURL = process.env.CLIENT_URL || "http://localhost:3000";
 console.log(`✅ CORS Allowed Origin: ${clientURL}`);
 
-// --- MIDDLEWARE ---
 app.use(
   cors({
     origin: [clientURL, "https://collab-verse.vercel.app"],
     credentials: true,
-  })
+  }),
 );
 app.use(express.json());
 app.use(express.urlencoded({ limit: "10mb" }));
 app.use(passport.initialize());
 
-// 🔧 FIX: Disable caching for ALL API responses
 app.use("/api", (req, res, next) => {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
   res.set("Pragma", "no-cache");
@@ -40,19 +37,17 @@ app.use("/api", (req, res, next) => {
   next();
 });
 
-// --- Health Check Route (before API routes) ---
 app.get("/health", (req, res) => {
   res.status(200).json({ message: "Server is running" });
 });
 
-// --- API Routes ---
+//! API Routes
 app.use("/api/users", userRoutes);
 app.use("/api/projects", projectRoutes);
 app.use("/api/collabs", collabRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/search", searchRoutes);
 
-// --- HTTP and Socket.IO Server Setup ---
 const httpServer = createServer(app);
 const activeUsersByRoom = {};
 
@@ -65,7 +60,7 @@ const io = new Server(httpServer, {
   transports: ["websocket", "polling"],
 });
 
-// --- SOCKET.IO LOGIC ---
+//! Socket.io logic
 io.on("connection", (socket) => {
   console.log(`🔌 New client connected: ${socket.id}`);
 
@@ -78,7 +73,7 @@ io.on("connection", (socket) => {
 
       socket.join(projectId);
       console.log(
-        `👍 Client ${socket.id} (${user.name}) joined room: ${projectId}`
+        `👍 Client ${socket.id} (${user.name}) joined room: ${projectId}`,
       );
 
       if (!activeUsersByRoom[projectId]) {
@@ -125,7 +120,7 @@ io.on("connection", (socket) => {
       });
 
       console.log(
-        `✅ Code saved for project ${projectId} (Language: ${language})`
+        `✅ Code saved for project ${projectId} (Language: ${language})`,
       );
 
       io.in(projectId).emit("code_saved_success", {
@@ -163,7 +158,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// --- Database Connection ---
+// Database Connection
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI, {
@@ -177,7 +172,6 @@ const connectDB = async () => {
   }
 };
 
-// --- Server Start ---
 const startServer = async () => {
   await connectDB();
   httpServer.listen(PORT, () => {
@@ -187,7 +181,6 @@ const startServer = async () => {
 
 startServer();
 
-// --- Graceful Shutdown ---
 process.on("SIGTERM", () => {
   console.log("SIGTERM received, shutting down gracefully");
   httpServer.close(() => {

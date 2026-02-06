@@ -2,9 +2,6 @@ import Project from "../models/project.model.js";
 import User from "../models/user.model.js";
 import Collaboration from "../models/collaboration.model.js";
 
-// --- CORE PROJECT CRUD ---
-
-// 1. Create a new project
 export const createProject = async (req, res) => {
   try {
     const { title, description, techStack, rolesNeeded, githubRepo, liveUrl } =
@@ -30,7 +27,7 @@ export const createProject = async (req, res) => {
     await project.save();
     const populatedProject = await Project.findById(project._id).populate(
       "createdBy",
-      "name occupation avatarUrl"
+      "name occupation avatarUrl",
     );
 
     res.status(201).json(populatedProject);
@@ -40,7 +37,6 @@ export const createProject = async (req, res) => {
   }
 };
 
-// 2. Get all projects (public listing)
 export const getProjects = async (req, res) => {
   try {
     const projects = await Project.find({})
@@ -55,7 +51,6 @@ export const getProjects = async (req, res) => {
   }
 };
 
-// 3. Get a single project by ID
 export const getProjectById = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
@@ -77,7 +72,6 @@ export const getProjectById = async (req, res) => {
   }
 };
 
-// 4. Get projects for the logged-in user
 export const getMyProjects = async (req, res) => {
   try {
     const projects = await Project.find({
@@ -95,7 +89,6 @@ export const getMyProjects = async (req, res) => {
   }
 };
 
-// 5. Update a project
 export const updateProject = async (req, res) => {
   try {
     const projectId = req.params.id;
@@ -105,7 +98,7 @@ export const updateProject = async (req, res) => {
     const updatedProject = await Project.findOneAndUpdate(
       { _id: projectId, createdBy: userId },
       updateData,
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!updatedProject) {
@@ -121,7 +114,6 @@ export const updateProject = async (req, res) => {
   }
 };
 
-// 6. Delete a project
 export const deleteProject = async (req, res) => {
   try {
     const projectId = req.params.id;
@@ -148,9 +140,7 @@ export const deleteProject = async (req, res) => {
   }
 };
 
-// --- INVITATION LOGIC (Using Collaboration Model) ---
-
-// 7. Invite a user to a project by email
+//! INVITATION LOGIC
 export const inviteToProject = async (req, res) => {
   try {
     const { id: projectId } = req.params;
@@ -207,9 +197,6 @@ export const inviteToProject = async (req, res) => {
   }
 };
 
-// --- JOIN REQUEST LOGIC ---
-
-// 8. Request to join a project
 export const requestToJoinProject = async (req, res) => {
   try {
     const projectId = req.params.id;
@@ -250,7 +237,6 @@ export const requestToJoinProject = async (req, res) => {
   }
 };
 
-// 9. Accept a user's request to join
 export const acceptJoinRequest = async (req, res) => {
   try {
     const { id: projectId, userId: applicantId } = req.params;
@@ -269,7 +255,7 @@ export const acceptJoinRequest = async (req, res) => {
 
     const updatedProject = await Project.findById(projectId).populate(
       "members",
-      "name avatarUrl"
+      "name avatarUrl",
     );
 
     res.status(200).json({
@@ -282,7 +268,6 @@ export const acceptJoinRequest = async (req, res) => {
   }
 };
 
-// 10. Reject a user's request to join
 export const rejectJoinRequest = async (req, res) => {
   try {
     const { id: projectId, userId: applicantId } = req.params;

@@ -14,14 +14,8 @@ import {
 } from "../controllers/project.controller.js";
 
 const router = express.Router();
-
-// --- SPECIFIC ROUTES FIRST (before :id) ---
 router.route("/my-projects").get(protect, getMyProjects);
-
-// --- GENERAL ROOT ROUTE ---
 router.route("/").post(protect, createProject).get(getProjects);
-
-// --- DYNAMIC ROUTES LAST ---
 router.route("/:id/invite").post(protect, inviteToProject);
 router.route("/:id/request-join").post(protect, requestToJoinProject);
 router.route("/:id/accept-join/:userId").put(protect, acceptJoinRequest);

@@ -39,7 +39,8 @@ export default function UserProfilePage() {
   const [relationshipStatus, setRelationshipStatus] = useState("loading");
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  // --- DATA FETCHING ---
+  //! DATA FETCHING
+
   const fetchUserProfile = useCallback(async () => {
     if (!id) return;
     setIsLoading(true);
@@ -64,7 +65,7 @@ export default function UserProfilePage() {
     fetchUserProfile();
   }, [id, isAuthenticated, authLoading, router, fetchUserProfile]);
 
-  // --- RELATIONSHIP STATUS LOGIC ---
+  //! RELATIONSHIP STATUS LOGIC
   useEffect(() => {
     if (loggedInUser && userProfile) {
       if (loggedInUser.colleagues?.includes(userProfile._id)) {
@@ -81,7 +82,7 @@ export default function UserProfilePage() {
     }
   }, [loggedInUser, userProfile]);
 
-  // --- ACTION HANDLERS ---
+  //! ACTION HANDLERS
   const handleAction = async (apiCall, successMessage) => {
     if (!userProfile?._id) return;
     setIsActionLoading(true);
@@ -101,29 +102,29 @@ export default function UserProfilePage() {
     }
   };
 
-  // --- 💥 ASLI FIX YAHAN HAI: NAYE, SAHI WALE URLS 💥 ---
   const handleSendRequest = () =>
     handleAction(
       () => api.post(`/collabs/requests/${userProfile._id}/send`),
-      "Request sent!"
+      "Request sent!",
     );
   const handleAcceptRequest = () =>
     handleAction(
       () => api.put(`/collabs/requests/${userProfile._id}/accept`),
-      "Request accepted!"
+      "Request accepted!",
     );
   const handleRejectRequest = () =>
     handleAction(
       () => api.delete(`/collabs/requests/${userProfile._id}/reject`),
-      "Request rejected."
+      "Request rejected.",
     );
   const handleCancelRequest = () =>
     handleAction(
       () => api.delete(`/collabs/requests/${userProfile._id}/reject`),
-      "Request cancelled."
+      "Request cancelled.",
     );
 
-  // --- RENDER LOGIC ---
+  //! Render
+  
   if (isLoading || authLoading) {
     return (
       <div className="text-center text-white py-10">Loading Profile...</div>

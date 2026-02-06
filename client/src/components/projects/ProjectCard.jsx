@@ -1,5 +1,3 @@
-// client/src/components/projects/ProjectCard.jsx
-
 import { useState } from "react";
 import Link from "next/link";
 import api from "@/api/axios";
@@ -8,7 +6,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
@@ -44,7 +41,6 @@ const ProjectCard = ({ project, isOwner, onProjectDeleted }) => {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Helper function status ke basis par color dene ke liye
   const getStatusClass = (status) => {
     switch (status) {
       case "Actively Recruiting":
@@ -56,7 +52,6 @@ const ProjectCard = ({ project, isOwner, onProjectDeleted }) => {
     }
   };
 
-  // Delete ke liye professional handler
   const handleDelete = async () => {
     setIsDeleting(true);
     toast.loading("Deleting project...");
@@ -65,7 +60,7 @@ const ProjectCard = ({ project, isOwner, onProjectDeleted }) => {
       toast.dismiss();
       toast.success("Project Deleted!");
       if (onProjectDeleted) {
-        onProjectDeleted(project._id); // Parent page ko batao ki UI se card hata de
+        onProjectDeleted(project._id);
       }
     } catch (error) {
       toast.dismiss();

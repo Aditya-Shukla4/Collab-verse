@@ -33,11 +33,9 @@ export default function MyProjectsPage() {
         api.get("/collabs/invitations/pending"),
       ]);
 
-      // 🔧 CRITICAL FIX: Handle different response formats
       let projectsData = [];
       let invitationsData = [];
 
-      // Backend returns array directly for both endpoints
       if (Array.isArray(projectsResponse?.data)) {
         projectsData = projectsResponse.data;
       } else if (projectsResponse?.data?.projects) {
@@ -83,7 +81,7 @@ export default function MyProjectsPage() {
     setProjects((currentProjects) =>
       Array.isArray(currentProjects)
         ? currentProjects.filter((p) => p?._id !== deletedProjectId)
-        : []
+        : [],
     );
   };
 
@@ -111,7 +109,7 @@ export default function MyProjectsPage() {
       setInvitations((prev) =>
         Array.isArray(prev)
           ? prev.filter((inv) => inv?._id !== invitationId)
-          : []
+          : [],
       );
     } catch (err) {
       console.error("Reject invite error:", err);
@@ -133,7 +131,6 @@ export default function MyProjectsPage() {
     return <div className="text-center text-red-500 py-20">{error}</div>;
   }
 
-  // 🔧 SAFETY: Always ensure arrays before filtering
   const ownedProjects =
     loggedInUser && Array.isArray(projects)
       ? projects.filter((p) => p?.createdBy?._id === loggedInUser._id)
@@ -167,7 +164,7 @@ export default function MyProjectsPage() {
           </Button>
         </div>
 
-        {/* --- INVITATIONS SECTION --- */}
+        {/* INVITATIONs */}
         {Array.isArray(invitations) && invitations.length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold tracking-tight text-white mb-4 flex items-center">
@@ -228,7 +225,7 @@ export default function MyProjectsPage() {
           </div>
         )}
 
-        {/* --- OWNED PROJECTS SECTION --- */}
+        {/* OWNED PROJECTS */}
         <div className="mb-12">
           <h2 className="text-2xl font-bold tracking-tight text-white mb-4">
             My Created Projects ({ownedProjects.length})
@@ -257,7 +254,7 @@ export default function MyProjectsPage() {
           )}
         </div>
 
-        {/* --- SHARED PROJECTS SECTION --- */}
+        {/* SHARED PROJECTS */}
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-white mb-4 flex items-center">
             <Share2 className="mr-3 h-6 w-6 text-purple-400" /> Projects Shared

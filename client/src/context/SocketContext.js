@@ -1,5 +1,3 @@
-// client/src/context/SocketContext.js
-
 import { createContext, useContext, useEffect } from "react";
 import socket from "@/lib/socket";
 import { useAuth } from "./AuthContext";
@@ -15,13 +13,11 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      // Connect the socket only when the user is logged in
       socket.connect();
       console.log("🔌 Connecting to socket server...");
     }
 
     return () => {
-      // Disconnect when the component unmounts or user logs out
       socket.disconnect();
       console.log("🔌 Disconnecting from socket server...");
     };

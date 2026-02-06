@@ -1,8 +1,5 @@
-// server/src/services/compilerService.js
-
 import vm from "vm";
 
-// Time limit for code execution in milliseconds (e.g., 2 seconds)
 const TIME_LIMIT = 2000;
 
 /**
@@ -13,10 +10,7 @@ const TIME_LIMIT = 2000;
  */
 const executeCode = (codeString, inputString = "") => {
   let capturedOutput = "";
-
-  // Prepare input: Filter out lines that are only whitespace, then split by lines.
   const allInputLines = inputString.split("\n");
-  // CRITICAL IMPROVEMENT: Only keep lines with actual content
   const inputLines = allInputLines.filter((line) => line.trim().length > 0);
   let inputIndex = 0;
 
@@ -26,13 +20,10 @@ const executeCode = (codeString, inputString = "") => {
         capturedOutput += args.map(String).join(" ") + "\n";
       },
     },
-
-    // 💥 ROBUST getInput(): Reads only non-empty lines, returns empty string when finished 💥
     getInput: () => {
       if (inputIndex >= inputLines.length) {
-        return ""; // Returns empty string for Number() to convert to 0 gracefully
+        return "";
       }
-      // Return the line, but trim it one last time just in case.
       return inputLines[inputIndex++].trim();
     },
 

@@ -1,5 +1,3 @@
-// server/src/models/user.model.js
-
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
@@ -31,8 +29,6 @@ const userSchema = new mongoose.Schema(
     portfolioUrl: { type: String, default: "", trim: true },
     otherUrl: { type: String, default: "", trim: true },
     collabPrefs: { type: String, default: "", trim: true },
-
-    // 🔥 COLLABORATION FIELDS - THESE WERE MISSING!
     colleagues: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -57,13 +53,13 @@ const userSchema = new mongoose.Schema(
     projectInvites: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Project", // This refers to the Project model
+        ref: "Project",
         default: [],
       },
     ],
   },
 
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.index({

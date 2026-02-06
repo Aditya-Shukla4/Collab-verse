@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { useAuth } from "@/context/AuthContext"; // CORRECT: Central auth hook
-import api from "@/api/axios"; // CORRECT: Central api instance
+import { useAuth } from "@/context/AuthContext";
+import api from "@/api/axios";
 
-// CORRECT: Your beautiful Shadcn UI components
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -32,7 +31,6 @@ export default function CreateProfilePage() {
     refetchUser,
   } = useAuth();
 
-  // CORRECT: Your comprehensive state object
   const [profileData, setProfileData] = useState({
     name: "",
     occupation: "",
@@ -48,7 +46,6 @@ export default function CreateProfilePage() {
     collaborationStatus: "Just Browsing",
   });
 
-  // CORRECT: My robust useEffect for secure loading and data population
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
@@ -96,7 +93,7 @@ export default function CreateProfilePage() {
           .filter(Boolean),
       };
 
-      // My logic for the API call is correct and secure
+      //! Api call
       await api.put("/users/me", dataToSend);
 
       await refetchUser();
@@ -130,7 +127,8 @@ export default function CreateProfilePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
-            {/* --- BASIC INFO SECTION --- */}
+            
+            {/* BASIC INFO SECTION */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-500">
                 BASIC INFO
@@ -217,7 +215,7 @@ export default function CreateProfilePage() {
               </div>
             </div>
 
-            {/* --- SOCIAL & PROFESSIONAL LINKS SECTION --- */}
+            {/* SOCIAL & PROFESSIONAL LINKS SECTION */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-500">
                 SOCIAL & PROFESSIONAL LINKS
@@ -267,7 +265,7 @@ export default function CreateProfilePage() {
               </div>
             </div>
 
-            {/* --- ABOUT & COLLABORATION SECTION --- */}
+            {/* ABOUT & COLLABORATION SECTION */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-gray-500">
                 ABOUT & COLLABORATION

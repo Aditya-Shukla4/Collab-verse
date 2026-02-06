@@ -4,7 +4,6 @@ import api from "@/api/axios";
 import { useAuth } from "@/context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
 
-// Shadcn UI Components
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function EditProjectPage() {
   const router = useRouter();
-  const { id } = router.query; // Project ID from URL
+  const { id } = router.query;
   const { isAuthenticated, loading: authLoading, user } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -34,7 +33,6 @@ export default function EditProjectPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Step 1: Fetch existing project data
   useEffect(() => {
     if (!id || !isAuthenticated) return;
 
@@ -42,7 +40,6 @@ export default function EditProjectPage() {
       setIsLoading(true);
       try {
         const { data } = await api.get(`/projects/${id}`);
-        // Ensure the logged-in user is the owner
         if (data.createdBy._id !== user._id) {
           toast.error("You are not authorized to edit this project.");
           router.push("/dashboard");
@@ -67,7 +64,6 @@ export default function EditProjectPage() {
     fetchProjectData();
   }, [id, isAuthenticated, user, router]);
 
-  // Page protection
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push("/LoginPage");
@@ -96,10 +92,9 @@ export default function EditProjectPage() {
     };
 
     try {
-      // Use PUT request for updating existing data
       await api.put(`/projects/${id}`, projectData);
       toast.success("Project Updated Successfully!");
-      router.push(`/projects/${id}`); // Redirect to the project detail page
+      router.push(`/projects/${id}`);
     } catch (err) {
       const errorMessage = err.response?.data?.message || "An error occurred.";
       toast.error(errorMessage);

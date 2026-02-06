@@ -1,7 +1,6 @@
 import User from "../models/user.model.js";
 import Collaboration from "../models/collaboration.model.js";
 
-// --- DASHBOARD SEARCH ($text based) ---
 export const searchUsers = async (req, res) => {
   try {
     const keyword = req.query.query
@@ -9,10 +8,9 @@ export const searchUsers = async (req, res) => {
       : {};
 
     const users = await User.find(keyword)
-      .find({ _id: { $ne: req.user._id } }) // Exclude self
+      .find({ _id: { $ne: req.user._id } })
       .select("-password");
 
-    // 🔧 FIX: Always return an array, even if empty
     res.json(users || []);
   } catch (error) {
     console.error("Error searching users:", error);
@@ -20,7 +18,6 @@ export const searchUsers = async (req, res) => {
   }
 };
 
-// --- INVITE MODAL SEARCH ($regex based) ---
 export const searchForInvite = async (req, res) => {
   try {
     const keyword = req.query.query
@@ -36,7 +33,6 @@ export const searchForInvite = async (req, res) => {
       .limit(10)
       .select("name email avatarUrl");
 
-    // 🔧 FIX: Always return an array
     res.json(users || []);
   } catch (error) {
     console.error("User invite search error:", error);
@@ -44,7 +40,6 @@ export const searchForInvite = async (req, res) => {
   }
 };
 
-// --- GET LOGGED-IN USER'S PROFILE (/me) ---
 export const getMyProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
@@ -58,7 +53,6 @@ export const getMyProfile = async (req, res) => {
   }
 };
 
-// --- GET ANY USER'S PROFILE BY ID (/:id) ---
 export const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
@@ -75,7 +69,6 @@ export const getUserById = async (req, res) => {
   }
 };
 
-// --- UPDATE USER PROFILE ---
 export const updateUserProfile = async (req, res) => {
   try {
     const updatedUser = await User.findByIdAndUpdate(
@@ -94,7 +87,6 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
-// --- GET USER'S COLLEAGUES ---
 export const getMyColleagues = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate(
@@ -104,7 +96,6 @@ export const getMyColleagues = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
-    // 🔧 FIX: Ensure colleagues is always an array
     res.status(200).json(user.colleagues || []);
   } catch (error) {
     console.error("Error fetching colleagues:", error);
@@ -114,7 +105,6 @@ export const getMyColleagues = async (req, res) => {
   }
 };
 
-// --- GET USER'S NOTIFICATIONS ---
 export const getMyNotifications = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate({
@@ -126,7 +116,6 @@ export const getMyNotifications = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // Also fetch pending project invitations
     const invitations = await Collaboration.find({
       collaborator: req.user.id,
       status: "pending",

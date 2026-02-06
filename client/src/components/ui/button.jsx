@@ -1,5 +1,3 @@
-// client/src/components/ui/button.jsx
-
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva } from "class-variance-authority";
@@ -35,26 +33,24 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
+  },
 );
 
-// The fix is here: using React.forwardRef and receiving the 'ref'
 const Button = React.forwardRef(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    // <-- 1. Ref is accepted here
     const Comp = asChild ? Slot : "button";
 
     return (
       <Comp
         data-slot="button"
         className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref} // <-- 2. Ref is passed down to the underlying element
+        ref={ref}
         {...props}
       />
     );
-  }
+  },
 );
 
-Button.displayName = "Button"; // Good practice
+Button.displayName = "Button";
 
 export { Button, buttonVariants };

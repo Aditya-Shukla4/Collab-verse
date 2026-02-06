@@ -5,10 +5,6 @@ import Project from "../models/project.model.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
-// --- PROJECT INVITATION LOGIC ---
-
-// @desc    Get all pending invitations for the logged-in user
-// @route   GET /api/collabs/invitations/pending
 export const getPendingInvitations = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -19,7 +15,6 @@ export const getPendingInvitations = async (req, res) => {
       .populate("project", "title")
       .populate("owner", "name avatarUrl");
 
-    // FIX: Always return an array, even if empty
     console.log("Invitations found:", invitations.length);
     res.status(200).json(invitations || []);
   } catch (error) {
@@ -28,8 +23,6 @@ export const getPendingInvitations = async (req, res) => {
   }
 };
 
-// @desc    Accept a project invitation
-// @route   PUT /api/collabs/invitations/:id/accept
 export const acceptProjectInvite = async (req, res) => {
   console.log("--- ACCEPT INVITE - Controller reached ---");
   try {
@@ -53,7 +46,6 @@ export const acceptProjectInvite = async (req, res) => {
     collab.status = "accepted";
     await collab.save();
 
-    // Add user to project members
     await Project.findByIdAndUpdate(collab.project, {
       $addToSet: { members: userId },
     });
@@ -68,8 +60,6 @@ export const acceptProjectInvite = async (req, res) => {
   }
 };
 
-// @desc    Reject a project invitation
-// @route   DELETE /api/collabs/invitations/:id/reject
 export const rejectProjectInvite = async (req, res) => {
   try {
     const collaborationId = req.params.id;
@@ -93,10 +83,8 @@ export const rejectProjectInvite = async (req, res) => {
   }
 };
 
-// --- COLLEAGUE (DOSTI) REQUEST LOGIC ---
+//! COLLEAGUE REQUEST LOGIC
 
-// @desc    Send a collaboration request to another user
-// @route   POST /api/collabs/requests/:userId/send
 export const sendCollabRequest = async (req, res) => {
   try {
     const senderId = req.user.id;
@@ -130,7 +118,7 @@ export const sendCollabRequest = async (req, res) => {
     const updatedSender = await User.findByIdAndUpdate(
       senderId,
       { $addToSet: { sentCollabRequests: receiverId } },
-      { new: true }
+      { new: true },
     ).select("-password");
 
     res.status(200).json({
@@ -143,8 +131,6 @@ export const sendCollabRequest = async (req, res) => {
   }
 };
 
-// @desc    Accept a collaboration request
-// @route   PUT /api/collabs/requests/:userId/accept
 export const acceptCollabRequest = async (req, res) => {
   try {
     const receiverId = req.user.id;
@@ -164,7 +150,7 @@ export const acceptCollabRequest = async (req, res) => {
         $pull: { receivedCollabRequests: senderId },
         $addToSet: { colleagues: senderId },
       },
-      { new: true }
+      { new: true },
     ).select("-password");
 
     res.status(200).json({
@@ -177,8 +163,6 @@ export const acceptCollabRequest = async (req, res) => {
   }
 };
 
-// @desc    Reject or cancel a collaboration request
-// @route   DELETE /api/collabs/requests/:userId/reject
 export const rejectCollabRequest = async (req, res) => {
   try {
     const currentUserId = req.user.id;
@@ -202,7 +186,7 @@ export const rejectCollabRequest = async (req, res) => {
           receivedCollabRequests: otherUserId,
         },
       },
-      { new: true }
+      { new: true },
     ).select("-password");
 
     res.status(200).json({
@@ -215,8 +199,6 @@ export const rejectCollabRequest = async (req, res) => {
   }
 };
 
-// @desc    Get all received colleague requests
-// @route   GET /api/collabs/requests/received
 export const getReceivedRequests = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate({
@@ -228,7 +210,6 @@ export const getReceivedRequests = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // FIX: Always return array even if user has no requests
     console.log("Received requests:", user.receivedCollabRequests?.length || 0);
     res.status(200).json(user.receivedCollabRequests || []);
   } catch (error) {

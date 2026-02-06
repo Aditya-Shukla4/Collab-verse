@@ -31,7 +31,6 @@ const collaborationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Ensure a user can only be a collaborator on a project once
 collaborationSchema.index({ project: 1, collaborator: 1 }, { unique: true });
 
 const Collaboration = mongoose.model("Collaboration", collaborationSchema);
