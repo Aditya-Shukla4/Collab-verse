@@ -1,4 +1,4 @@
-import { Menu, PlusCircle, PanelLeftOpen } from "lucide-react";
+import { PlusCircle, PanelLeftOpen } from "lucide-react"; // Menu icon yahan se uda diya
 import Link from "next/link";
 import useSearchStore from "@/store/searchStore";
 import { useRef, useEffect, useState } from "react";
@@ -73,25 +73,7 @@ export default function Header({ onMobileToggle, collapsed, onExpand }) {
           </button>
         )}
 
-        {/* Mobile hamburger */}
-        <button
-          onClick={onMobileToggle}
-          className="lg:hidden"
-          style={{
-            width: 34,
-            height: 34,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: "var(--as-radius-sm)",
-            border: "1px solid var(--as-border2)",
-            background: "var(--as-surface)",
-            color: "var(--as-text2)",
-            cursor: "pointer",
-          }}
-        >
-          <Menu size={16} />
-        </button>
+        {/* Bhai, mobile hamburger yahan se uda diya hai! */}
       </div>
 
       {/* Right side */}
