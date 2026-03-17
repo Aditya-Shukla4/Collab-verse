@@ -2,18 +2,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/axios";
-
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -22,10 +10,125 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+function Field({ label, required, children }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+      <label
+        style={{
+          fontFamily: "var(--as-font-body)",
+          fontSize: "0.82rem",
+          fontWeight: 500,
+          color: "var(--as-text2)",
+          letterSpacing: "0.01em",
+        }}
+      >
+        {label}
+        {required && (
+          <span style={{ color: "var(--as-coral)", marginLeft: 2 }}>*</span>
+        )}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function AsInput({
+  name,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  required,
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <input
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      required={required}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={{
+        width: "100%",
+        height: 40,
+        background: "var(--as-bg3)",
+        border: `1px solid ${focused ? "var(--as-accent)" : "var(--as-border2)"}`,
+        borderRadius: "var(--as-radius-md)",
+        padding: "0 0.875rem",
+        fontFamily: "var(--as-font-body)",
+        fontSize: "0.875rem",
+        color: "var(--as-text)",
+        outline: "none",
+        boxShadow: focused ? "0 0 0 3px rgba(108,99,255,0.12)" : "none",
+        transition: "border-color 0.2s, box-shadow 0.2s",
+      }}
+    />
+  );
+}
+
+function AsTextarea({ name, value, onChange, placeholder }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <textarea
+      name={name}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={{
+        width: "100%",
+        minHeight: 100,
+        resize: "vertical",
+        background: "var(--as-bg3)",
+        border: `1px solid ${focused ? "var(--as-accent)" : "var(--as-border2)"}`,
+        borderRadius: "var(--as-radius-md)",
+        padding: "0.75rem 0.875rem",
+        fontFamily: "var(--as-font-body)",
+        fontSize: "0.875rem",
+        color: "var(--as-text)",
+        outline: "none",
+        lineHeight: 1.6,
+        boxShadow: focused ? "0 0 0 3px rgba(108,99,255,0.12)" : "none",
+        transition: "border-color 0.2s, box-shadow 0.2s",
+      }}
+    />
+  );
+}
+
+function SectionHeading({ children }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.75rem",
+        marginBottom: "1.25rem",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--as-font-mono)",
+          fontSize: "0.65rem",
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          color: "var(--as-accent)",
+        }}
+      >
+        {children}
+      </span>
+      <div style={{ flex: 1, height: 1, background: "var(--as-border)" }} />
+    </div>
+  );
+}
+
 export default function CreateProfilePage() {
   const router = useRouter();
   const { user, loading: authLoading, isAuthenticated } = useAuth();
-
+  const [saving, setSaving] = useState(false);
   const [profileData, setProfileData] = useState({
     name: "",
     occupation: "",
@@ -60,21 +163,21 @@ export default function CreateProfilePage() {
         otherUrl: user.otherUrl || "",
         bio: user.bio || "",
         collabPrefs: user.collabPrefs || "",
+        collaborationStatus: user.collaborationStatus || "Just Browsing",
       });
     }
   }, [user, authLoading, isAuthenticated, router]);
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setProfileData({ ...profileData, [e.target.name]: e.target.value });
-  };
+  const handleStatusChange = (v) =>
+    setProfileData({ ...profileData, collaborationStatus: v });
 
-  const handleStatusChange = (value) => {
-    setProfileData({ ...profileData, collaborationStatus: value });
-  };
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
-      const dataToSend = {
+      await api.put("/users/me", {
         ...profileData,
         interests: profileData.interests
           .split(",")
@@ -84,219 +187,284 @@ export default function CreateProfilePage() {
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean),
-      };
-      //! Api call
-      await api.put("/users/me", dataToSend);
-
+      });
       router.push("/dashboard");
-    } catch (error) {
-      console.error("Failed to update profile:", error);
-      alert(
-        `Update failed: ${error.response?.data?.message || "Server error"}`,
-      );
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+      alert(err.response?.data?.message || "Update failed.");
+    } finally {
+      setSaving(false);
     }
   };
 
   if (authLoading || !user) {
     return (
-      <div className="flex justify-center items-center h-screen text-white">
-        Loading Profile...
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "60vh",
+          fontFamily: "var(--as-font-mono)",
+          fontSize: "0.82rem",
+          color: "var(--as-text3)",
+          letterSpacing: "0.06em",
+        }}
+      >
+        Loading profile…
       </div>
     );
   }
 
   return (
-    <main
-      className="flex flex-col items-center justify-center p-4 md:p-8"
-      style={{ minHeight: "calc(100vh - 73px)" }}
-    >
-      <form onSubmit={handleSubmit} className="w-full max-w-4xl">
-        <Card className="bg-white/95 text-black">
-          <CardHeader>
-            <CardTitle className="text-3xl font-bold">
-              Create / Edit Your Profile
-            </CardTitle>
-            <CardDescription>
-              Share who you are and how you like to collaborate.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-8">
-            {/*  BASIC INFO SECTION  */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-500">
-                BASIC INFO
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">User Name *</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={profileData.name}
-                    onChange={handleChange}
-                    className="mt-1.5"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="occupation">Occupation</Label>
-                  <Input
-                    id="occupation"
-                    name="occupation"
-                    value={profileData.occupation}
-                    onChange={handleChange}
-                    className="mt-1.5"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="interests">Domain of Interests</Label>
-                  <Input
-                    id="interests"
-                    name="interests"
-                    value={profileData.interests}
-                    onChange={handleChange}
-                    className="mt-1.5"
-                    placeholder="e.g., Web Dev, AI, UI/UX"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="location">User Location</Label>
-                  <Input
-                    id="location"
-                    name="location"
-                    value={profileData.location}
-                    onChange={handleChange}
-                    className="mt-1.5"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <Label htmlFor="skills">User Tech Stack *</Label>
-                  <Input
-                    id="skills"
+    <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 1rem 4rem" }}>
+      <div style={{ marginBottom: "2.5rem" }}>
+        <div
+          style={{
+            fontFamily: "var(--as-font-mono)",
+            fontSize: "0.65rem",
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: "var(--as-accent)",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.6rem",
+            marginBottom: "0.6rem",
+          }}
+        >
+          <span
+            style={{
+              display: "inline-block",
+              width: 18,
+              height: 1,
+              background: "var(--as-accent)",
+            }}
+          />
+          Profile
+        </div>
+        <h1
+          style={{
+            fontFamily: "var(--as-font-head)",
+            fontWeight: 800,
+            fontSize: "clamp(1.6rem, 3vw, 2.2rem)",
+            letterSpacing: "-0.03em",
+            color: "var(--as-text)",
+            marginBottom: "0.4rem",
+          }}
+        >
+          Create your profile
+        </h1>
+        <p style={{ fontSize: "0.9rem", color: "var(--as-text2)" }}>
+          Share who you are and how you like to collaborate.
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <div
+          style={{
+            background: "var(--as-surface)",
+            border: "1px solid var(--as-border2)",
+            borderRadius: "var(--as-radius-lg)",
+            padding: "2rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "2.5rem",
+          }}
+        >
+          <section>
+            <SectionHeading>Basic Info</SectionHeading>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "1rem",
+              }}
+            >
+              <Field label="Name" required>
+                <AsInput
+                  name="name"
+                  value={profileData.name}
+                  onChange={handleChange}
+                  required
+                />
+              </Field>
+              <Field label="Occupation">
+                <AsInput
+                  name="occupation"
+                  value={profileData.occupation}
+                  onChange={handleChange}
+                  placeholder="e.g. Full Stack Developer"
+                />
+              </Field>
+              <Field label="Domain of Interests">
+                <AsInput
+                  name="interests"
+                  value={profileData.interests}
+                  onChange={handleChange}
+                  placeholder="e.g. Web Dev, AI, UI/UX"
+                />
+              </Field>
+              <Field label="Location">
+                <AsInput
+                  name="location"
+                  value={profileData.location}
+                  onChange={handleChange}
+                  placeholder="e.g. Mumbai, India"
+                />
+              </Field>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <Field label="Tech Stack" required>
+                  <AsInput
                     name="skills"
                     value={profileData.skills}
                     onChange={handleChange}
-                    placeholder="Comma-separated, e.g., React, Next.js"
-                    className="mt-1.5"
+                    placeholder="React, Node.js, MongoDB"
                     required
                   />
-                </div>
-                <div>
-                  <Label htmlFor="collaborationStatus">
-                    Collaboration Status
-                  </Label>
-                  <Select
-                    value={profileData.collaborationStatus}
-                    onValueChange={handleStatusChange}
+                </Field>
+              </div>
+              <Field label="Collaboration Status">
+                <Select
+                  value={profileData.collaborationStatus}
+                  onValueChange={handleStatusChange}
+                >
+                  <SelectTrigger
+                    style={{
+                      height: 40,
+                      background: "var(--as-bg3)",
+                      border: "1px solid var(--as-border2)",
+                      borderRadius: "var(--as-radius-md)",
+                      fontFamily: "var(--as-font-body)",
+                      fontSize: "0.875rem",
+                      color: "var(--as-text)",
+                      outline: "none",
+                    }}
                   >
-                    <SelectTrigger className="w-full mt-1.5">
-                      <SelectValue placeholder="Select your status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Open to Collab">
-                        Open to Collab
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent
+                    style={{
+                      background: "var(--as-surface)",
+                      border: "1px solid var(--as-border2)",
+                      borderRadius: "var(--as-radius-md)",
+                    }}
+                  >
+                    {[
+                      "Open to Collab",
+                      "Seeking Opportunities",
+                      "Just Browsing",
+                    ].map((v) => (
+                      <SelectItem
+                        key={v}
+                        value={v}
+                        style={{
+                          color: "var(--as-text)",
+                          fontFamily: "var(--as-font-body)",
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        {v}
                       </SelectItem>
-                      <SelectItem value="Seeking Opportunities">
-                        Seeking Opportunities
-                      </SelectItem>
-                      <SelectItem value="Just Browsing">
-                        Just Browsing
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
             </div>
+          </section>
 
-            {/* SOCIAL & PROFESSIONAL LINKS SECTION */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-500">
-                SOCIAL & PROFESSIONAL LINKS
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="linkedinUrl">LinkedIn Profile URL</Label>
-                  <Input
-                    id="linkedinUrl"
-                    name="linkedinUrl"
-                    value={profileData.linkedinUrl}
-                    onChange={handleChange}
-                    className="mt-1.5"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="githubUrl">GitHub Profile URL *</Label>
-                  <Input
-                    id="githubUrl"
-                    name="githubUrl"
-                    value={profileData.githubUrl}
-                    onChange={handleChange}
-                    className="mt-1.5"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="portfolioUrl">Portfolio Website URL</Label>
-                  <Input
-                    id="portfolioUrl"
-                    name="portfolioUrl"
-                    value={profileData.portfolioUrl}
-                    onChange={handleChange}
-                    className="mt-1.5"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="otherUrl">Other Profile URL</Label>
-                  <Input
-                    id="otherUrl"
-                    name="otherUrl"
-                    value={profileData.otherUrl}
-                    onChange={handleChange}
-                    className="mt-1.5"
-                  />
-                </div>
-              </div>
+          <section>
+            <SectionHeading>Social & Professional Links</SectionHeading>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "1rem",
+              }}
+            >
+              <Field label="LinkedIn">
+                <AsInput
+                  name="linkedinUrl"
+                  value={profileData.linkedinUrl}
+                  onChange={handleChange}
+                  placeholder="https://linkedin.com/in/..."
+                />
+              </Field>
+              <Field label="GitHub" required>
+                <AsInput
+                  name="githubUrl"
+                  value={profileData.githubUrl}
+                  onChange={handleChange}
+                  placeholder="https://github.com/..."
+                  required
+                />
+              </Field>
+              <Field label="Portfolio">
+                <AsInput
+                  name="portfolioUrl"
+                  value={profileData.portfolioUrl}
+                  onChange={handleChange}
+                  placeholder="https://yoursite.com"
+                />
+              </Field>
+              <Field label="Other">
+                <AsInput
+                  name="otherUrl"
+                  value={profileData.otherUrl}
+                  onChange={handleChange}
+                  placeholder="Any other link"
+                />
+              </Field>
             </div>
+          </section>
 
-            {/* ABOUT & COLLABORATION SECTION */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-500">
-                ABOUT & COLLABORATION
-              </h3>
-              <div>
-                <Label htmlFor="bio">About Me</Label>
-                <Textarea
-                  id="bio"
+          <section>
+            <SectionHeading>About & Collaboration</SectionHeading>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+            >
+              <Field label="About Me">
+                <AsTextarea
                   name="bio"
                   value={profileData.bio}
                   onChange={handleChange}
-                  className="mt-1.5"
-                  placeholder="Tell us about yourself..."
+                  placeholder="Tell us about yourself…"
                 />
-              </div>
-              <div>
-                <Label htmlFor="collabPrefs">Collaboration Preferences</Label>
-                <Textarea
-                  id="collabPrefs"
+              </Field>
+              <Field label="Collaboration Preferences">
+                <AsTextarea
                   name="collabPrefs"
                   value={profileData.collabPrefs}
                   onChange={handleChange}
-                  className="mt-1.5"
-                  placeholder="e.g., 'Looking for frontend developers for a React project'"
+                  placeholder="What are you looking for in a collaborator?"
                 />
-              </div>
+              </Field>
             </div>
+          </section>
 
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full text-base font-bold bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              Save Profile
-            </Button>
-          </CardContent>
-        </Card>
+          <button
+            type="submit"
+            disabled={saving}
+            style={{
+              width: "100%",
+              height: 44,
+              borderRadius: "var(--as-radius-full)",
+              border: "none",
+              cursor: saving ? "not-allowed" : "pointer",
+              fontFamily: "var(--as-font-body)",
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              color: "#fff",
+              background: saving
+                ? "rgba(108,99,255,0.4)"
+                : "linear-gradient(135deg, var(--as-accent), rgba(108,99,255,0.82))",
+              boxShadow: saving ? "none" : "0 8px 24px rgba(108,99,255,0.25)",
+              transition: "all 0.2s",
+            }}
+          >
+            {saving ? "Saving…" : "Save Profile"}
+          </button>
+        </div>
       </form>
-    </main>
+    </div>
   );
 }
