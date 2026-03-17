@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import api from "@/api/axios";
@@ -197,6 +197,7 @@ export default function ProjectDetailsPage() {
   const [joinStatus, setJoinStatus] = useState("loading");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [runInTerminal, setRunInTerminal] = useState(null);
+  const terminalWriterRef = useRef(null);
   const [searchFocused, setSearchFocused] = useState(false);
 
   const fetchProject = async () => {
@@ -784,7 +785,7 @@ export default function ProjectDetailsPage() {
                 <div style={{ display: "flex" }}>
                   {activeCollaborators.map((u, i) => (
                     <Avatar
-                      key={u._id}
+                      key={`active-${u._id}`}
                       className="h-6 w-6"
                       style={{
                         marginLeft: i > 0 ? "-6px" : 0,
@@ -864,13 +865,15 @@ export default function ProjectDetailsPage() {
                     projectId={project._id}
                     projectData={project}
                     onRunCommand={runInTerminal}
+                    terminalWriter={terminalWriterRef}
                   />
                 </ResizablePanel>
                 <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={35}>
+                <ResizablePanel defaultSize={35} style={{ overflow: "hidden" }}>
                   <ProjectTerminal
                     projectId={project._id}
                     setTerminalRunner={setRunInTerminal}
+                    terminalWriterRef={terminalWriterRef}
                   />
                 </ResizablePanel>
               </ResizablePanelGroup>
@@ -897,7 +900,7 @@ export default function ProjectDetailsPage() {
               >
                 {project.joinRequests.map((applicant) => (
                   <div
-                    key={applicant._id}
+                    key={`req-${applicant._id}`}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -1054,7 +1057,7 @@ export default function ProjectDetailsPage() {
             >
               {project.members.map((member) => (
                 <Link
-                  key={member._id}
+                  key={`member-${member._id}`}
                   href={`/profile/${member._id}`}
                   style={{
                     display: "flex",

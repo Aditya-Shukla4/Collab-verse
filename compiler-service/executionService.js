@@ -1,9 +1,13 @@
 import { promises as fs } from "fs";
 import { exec } from "child_process";
 import path from "path";
+import os from "os"; // <-- BHAI, YE IMPORT ZAROORI HAI OS CHECK KE LIYE
 
 const TEMP_DIR = path.join(process.cwd(), "temp_code");
 const EXECUTION_TIMEOUT = 5000;
+
+// MAGIC TRICK: Check if the OS is Windows
+const IS_WIN = os.platform() === "win32";
 
 const initializeTempDir = async () => {
   await fs.mkdir(TEMP_DIR, { recursive: true });
@@ -20,7 +24,11 @@ const runPython = async (code, input) => {
     await fs.writeFile(codeFileName, code);
     await fs.writeFile(inputFileName, input);
     filesCreated = true;
-    const command = `python3 ${codeFileName} < ${inputFileName}`;
+
+    // FIX: Use 'python' for Windows, 'python3' for Linux/Mac
+    const pythonCmd = IS_WIN ? "python" : "python3";
+    const command = `${pythonCmd} ${codeFileName} < ${inputFileName}`;
+
     const { stdout, stderr } = await new Promise((resolve, reject) => {
       exec(
         command,
@@ -68,7 +76,10 @@ const runCpp = async (code, input) => {
     Date.now().toString() + Math.random().toString(36).substring(2, 8);
   const codeFileName = path.join(TEMP_DIR, `${uniqueId}.cpp`);
   const inputFileName = path.join(TEMP_DIR, `${uniqueId}.txt`);
-  const executableFileName = path.join(TEMP_DIR, `${uniqueId}.out`);
+
+  // FIX: Windows needs .exe, Linux uses .out
+  const exeExt = IS_WIN ? ".exe" : ".out";
+  const executableFileName = path.join(TEMP_DIR, `${uniqueId}${exeExt}`);
   let filesCreated = false;
 
   try {
@@ -79,6 +90,7 @@ const runCpp = async (code, input) => {
     const compileCommand = `g++ ${path.basename(
       codeFileName,
     )} -o ${path.basename(executableFileName)}`;
+
     await new Promise((resolve, reject) => {
       exec(
         compileCommand,
@@ -94,9 +106,13 @@ const runCpp = async (code, input) => {
 
     await fs.chmod(executableFileName, 0o755);
 
-    const runCommand = `./${path.basename(
-      executableFileName,
-    )} < ./${path.basename(inputFileName)}`;
+    // FIX: No "./" for Windows!
+    const execBase = path.basename(executableFileName);
+    const inputBase = path.basename(inputFileName);
+    const runCommand = IS_WIN
+      ? `${execBase} < ${inputBase}`
+      : `./${execBase} < ./${inputBase}`;
+
     const { stdout, stderr } = await new Promise((resolve, reject) => {
       exec(
         runCommand,
@@ -148,7 +164,10 @@ const runC = async (code, input) => {
     Date.now().toString() + Math.random().toString(36).substring(2, 8);
   const codeFileName = path.join(TEMP_DIR, `${uniqueId}.c`);
   const inputFileName = path.join(TEMP_DIR, `${uniqueId}.txt`);
-  const executableFileName = path.join(TEMP_DIR, `${uniqueId}.out`);
+
+  // FIX: Windows needs .exe, Linux uses .out
+  const exeExt = IS_WIN ? ".exe" : ".out";
+  const executableFileName = path.join(TEMP_DIR, `${uniqueId}${exeExt}`);
   let filesCreated = false;
 
   try {
@@ -159,6 +178,7 @@ const runC = async (code, input) => {
     const compileCommand = `gcc ${path.basename(
       codeFileName,
     )} -o ${path.basename(executableFileName)}`;
+
     await new Promise((resolve, reject) => {
       exec(
         compileCommand,
@@ -174,9 +194,13 @@ const runC = async (code, input) => {
 
     await fs.chmod(executableFileName, 0o755);
 
-    const runCommand = `./${path.basename(
-      executableFileName,
-    )} < ./${path.basename(inputFileName)}`;
+    // FIX: No "./" for Windows!
+    const execBase = path.basename(executableFileName);
+    const inputBase = path.basename(inputFileName);
+    const runCommand = IS_WIN
+      ? `${execBase} < ${inputBase}`
+      : `./${execBase} < ./${inputBase}`;
+
     const { stdout, stderr } = await new Promise((resolve, reject) => {
       exec(
         runCommand,
@@ -409,7 +433,10 @@ const runRust = async (code, input) => {
     Date.now().toString() + Math.random().toString(36).substring(2, 8);
   const codeFileName = path.join(TEMP_DIR, `${uniqueId}.rs`);
   const inputFileName = path.join(TEMP_DIR, `${uniqueId}.txt`);
-  const executableFileName = path.join(TEMP_DIR, uniqueId);
+
+  // FIX: Windows needs .exe
+  const exeExt = IS_WIN ? ".exe" : ".out";
+  const executableFileName = path.join(TEMP_DIR, `${uniqueId}${exeExt}`);
   let filesCreated = false;
 
   try {
@@ -420,6 +447,7 @@ const runRust = async (code, input) => {
     const compileCommand = `rustc ${path.basename(
       codeFileName,
     )} -o ${path.basename(executableFileName)}`;
+
     await new Promise((resolve, reject) => {
       exec(
         compileCommand,
@@ -435,9 +463,13 @@ const runRust = async (code, input) => {
 
     await fs.chmod(executableFileName, 0o755);
 
-    const runCommand = `./${path.basename(
-      executableFileName,
-    )} < ./${path.basename(inputFileName)}`;
+    // FIX: No "./" for Windows!
+    const execBase = path.basename(executableFileName);
+    const inputBase = path.basename(inputFileName);
+    const runCommand = IS_WIN
+      ? `${execBase} < ${inputBase}`
+      : `./${execBase} < ./${inputBase}`;
+
     const { stdout, stderr } = await new Promise((resolve, reject) => {
       exec(
         runCommand,

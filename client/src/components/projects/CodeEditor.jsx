@@ -1,31 +1,46 @@
 "use client";
-
 import dynamic from "next/dynamic";
 import { useEffect, useState, useRef } from "react";
 import { useSocket } from "@/context/SocketContext";
-import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+
+const LANGUAGES = [
+  "javascript",
+  "python",
+  "c",
+  "cpp",
+  "java",
+  "go",
+  "php",
+  "rust",
+];
+const COMPILER_URL =
+  process.env.NEXT_PUBLIC_COMPILER_API_URL || "http://localhost:6001";
 
 export default function CodeEditor({
   value,
   onChange,
   projectId,
   projectData,
-  onRunCommand,
+  terminalWriter,
 }) {
   const socket = useSocket();
   const [language, setLanguage] = useState("javascript");
   const [isRunning, setIsRunning] = useState(false);
   const lastReceivedCode = useRef(null);
 
+  const writeOutput = (text) => {
+    if (terminalWriter?.current) terminalWriter.current(text);
+  };
+
   useEffect(() => {
     try {
-      const savedLang = localStorage.getItem(`lang-${projectId}`);
-      if (savedLang) setLanguage(savedLang);
+      const saved = localStorage.getItem(`lang-${projectId}`);
+      if (saved) setLanguage(saved);
       else if (projectData?.codeLanguage) setLanguage(projectData.codeLanguage);
-    } catch (e) {
+    } catch {
       console.warn("localStorage not available");
     }
   }, [projectData, projectId]);
@@ -35,30 +50,30 @@ export default function CodeEditor({
     setLanguage(newLang);
     try {
       localStorage.setItem(`lang-${projectId}`, newLang);
-    } catch (e) {
-      console.warn("localStorage not available");
-    }
+    } catch {}
     socket?.emit("save_code", { projectId, newCode: value, language: newLang });
   };
 
+  // Auto-save
   useEffect(() => {
     if (!projectData) return;
-    const timer = setTimeout(() => {
+    const t = setTimeout(() => {
       socket?.emit("save_code", { projectId, newCode: value, language });
     }, 1500);
-    return () => clearTimeout(timer);
+    return () => clearTimeout(t);
   }, [value, language, socket, projectId, projectData]);
 
+  // Receive code changes from collaborators
   useEffect(() => {
     if (!socket) return;
-    const handleCodeReceive = (receivedCode) => {
+    const handler = (receivedCode) => {
       if (receivedCode !== lastReceivedCode.current) {
         lastReceivedCode.current = receivedCode;
         onChange(receivedCode);
       }
     };
-    socket.on("receive_code_change", handleCodeReceive);
-    return () => socket.off("receive_code_change", handleCodeReceive);
+    socket.on("receive_code_change", handler);
+    return () => socket.off("receive_code_change", handler);
   }, [socket, onChange]);
 
   const handleEditorChange = (newValue) => {
@@ -66,119 +81,116 @@ export default function CodeEditor({
     socket?.emit("code_change", { projectId, newCode: newValue });
   };
 
-  const handleRunCode = () => {
-    if (!onRunCommand || !value || isRunning) return;
-
+  const handleRunCode = async () => {
+    if (!value || isRunning) return;
     setIsRunning(true);
 
-    const tempFile = `temp_run_${Date.now()}`;
+    writeOutput(`\r\n\x1b[33m▶ Running ${language}...\x1b[0m\r\n`);
 
-    const createFileAndRun = (fileName, runCmd, cleanupCmd) => {
-      const cleanup = cleanupCmd || `rm -f ${fileName}`;
-
-      const base64Code = btoa(unescape(encodeURIComponent(value)));
-
-      const shellScript = `echo '${base64Code}' | base64 -d > ${fileName} && ${runCmd} && ${cleanup}`;
-
-      return shellScript;
-    };
-
-    let command;
     try {
-      switch (language) {
-        case "python":
-          command = createFileAndRun(
-            `${tempFile}.py`,
-            `python3 ${tempFile}.py`
-          );
-          break;
-        case "javascript":
-          command = createFileAndRun(`${tempFile}.js`, `node ${tempFile}.js`);
-          break;
-        case "c":
-          command = createFileAndRun(
-            `${tempFile}.c`,
-            `gcc ${tempFile}.c -o ${tempFile}.out 2>&1 && ./${tempFile}.out`,
-            `rm -f ${tempFile}.c ${tempFile}.out`
-          );
-          break;
-        case "cpp":
-          command = createFileAndRun(
-            `${tempFile}.cpp`,
-            `g++ ${tempFile}.cpp -o ${tempFile}.out 2>&1 && ./${tempFile}.out`,
-            `rm -f ${tempFile}.cpp ${tempFile}.out`
-          );
-          break;
-        case "java":
-          command = createFileAndRun(
-            `Main.java`,
-            `javac Main.java 2>&1 && java Main`,
-            `rm -f Main.java Main.class`
-          );
-          break;
-        case "go":
-          command = createFileAndRun(`${tempFile}.go`, `go run ${tempFile}.go`);
-          break;
-        case "php":
-          command = createFileAndRun(`${tempFile}.php`, `php ${tempFile}.php`);
-          break;
-        case "rust":
-          command = createFileAndRun(
-            `${tempFile}.rs`,
-            `rustc ${tempFile}.rs -o ${tempFile}.out 2>&1 && ./${tempFile}.out`,
-            `rm -f ${tempFile}.rs ${tempFile}.out`
-          );
-          break;
-        default:
-          console.error("Unsupported language for terminal execution");
-          setIsRunning(false);
-          return;
-      }
-
-      const timeoutId = setTimeout(() => {
-        setIsRunning(false);
-      }, 30000);
-
-      onRunCommand(command, () => {
-        clearTimeout(timeoutId);
-        setIsRunning(false);
+      const res = await fetch(`${COMPILER_URL}/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language, code: value, input: "" }),
       });
-    } catch (error) {
-      console.error("Error running code:", error);
+      const data = await res.json();
+
+      if (data.error) {
+        writeOutput(`\x1b[31m${data.error}\x1b[0m\r\n`);
+      } else {
+        writeOutput(`\x1b[32m${data.result || "(no output)"}\x1b[0m\r\n`);
+      }
+    } catch (err) {
+      writeOutput(
+        `\x1b[31mFailed to reach compiler service: ${err.message}\x1b[0m\r\n`,
+      );
+    } finally {
       setIsRunning(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-900">
-      <div className="flex justify-between items-center p-2 bg-zinc-950 border-b border-zinc-700 flex-shrink-0">
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        background: "var(--as-bg3)",
+      }}
+    >
+      {/* Toolbar */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0.5rem 0.875rem",
+          flexShrink: 0,
+          background: "var(--as-bg2)",
+          borderBottom: "1px solid var(--as-border)",
+        }}
+      >
         <select
           value={language}
           onChange={handleLanguageChange}
-          className="p-1 border border-zinc-700 bg-zinc-800 text-white rounded text-sm"
+          style={{
+            height: 30,
+            padding: "0 0.625rem",
+            background: "var(--as-bg3)",
+            border: "1px solid var(--as-border2)",
+            borderRadius: "var(--as-radius-sm)",
+            fontFamily: "var(--as-font-mono)",
+            fontSize: "0.78rem",
+            color: "var(--as-text2)",
+            outline: "none",
+            cursor: "pointer",
+          }}
         >
-          <option value="javascript">JavaScript</option>
-          <option value="python">Python</option>
-          <option value="c">C</option>
-          <option value="cpp">C++</option>
-          <option value="java">Java</option>
-          <option value="go">Go</option>
-          <option value="php">PHP</option>
-          <option value="rust">Rust</option>
+          {LANGUAGES.map((l) => (
+            <option key={l} value={l}>
+              {l.charAt(0).toUpperCase() + l.slice(1)}
+            </option>
+          ))}
         </select>
-        <Button
+
+        <button
           onClick={handleRunCode}
-          className={`bg-green-600 hover:bg-green-700 text-white flex items-center ${
-            isRunning ? "opacity-60 cursor-not-allowed" : ""
-          }`}
           disabled={isRunning}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.4rem",
+            height: 30,
+            padding: "0 0.875rem",
+            borderRadius: "var(--as-radius-full)",
+            border: "1px solid rgba(74,222,128,0.25)",
+            background: isRunning
+              ? "rgba(74,222,128,0.3)"
+              : "rgba(74,222,128,0.15)",
+            color: "var(--as-green)",
+            fontFamily: "var(--as-font-body)",
+            fontSize: "0.78rem",
+            fontWeight: 600,
+            cursor: isRunning ? "not-allowed" : "pointer",
+            opacity: isRunning ? 0.7 : 1,
+            transition: "background 0.15s",
+          }}
+          onMouseEnter={(e) => {
+            if (!isRunning)
+              e.currentTarget.style.background = "rgba(74,222,128,0.25)";
+          }}
+          onMouseLeave={(e) => {
+            if (!isRunning)
+              e.currentTarget.style.background = "rgba(74,222,128,0.15)";
+          }}
         >
-          <Play className="mr-2 h-4 w-4" />
-          {isRunning ? "Running..." : "Run in Terminal"}
-        </Button>
+          <Play size={12} />
+          {isRunning ? "Running…" : "Run"}
+        </button>
       </div>
 
-      <div className="flex-grow w-full h-full">
+      {/* Monaco */}
+      <div style={{ flex: 1, width: "100%", minHeight: 0 }}>
         <Editor
           language={language}
           theme="vs-dark"
@@ -189,13 +201,14 @@ export default function CodeEditor({
             minimap: { enabled: false },
             automaticLayout: true,
             scrollBeyondLastLine: false,
+            fontFamily: "var(--as-font-mono)",
           }}
           beforeMount={(monaco) => {
             monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions(
               {
                 noSemanticValidation: false,
                 noSyntaxValidation: false,
-              }
+              },
             );
           }}
         />

@@ -6,10 +6,88 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import ProjectCard from "@/components/projects/ProjectCard";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Card, CardContent } from "@/components/ui/card";
 import { FolderKanban, PlusCircle, Check, X, Mail, Share2 } from "lucide-react";
+
+function SectionHeading({
+  icon: Icon,
+  children,
+  count,
+  color = "var(--as-accent)",
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.75rem",
+        marginBottom: "1.5rem",
+      }}
+    >
+      {Icon && <Icon size={18} style={{ color, flexShrink: 0 }} />}
+      <h2
+        style={{
+          fontFamily: "var(--as-font-head)",
+          fontWeight: 700,
+          fontSize: "1.2rem",
+          letterSpacing: "-0.02em",
+          color: "var(--as-text)",
+          margin: 0,
+        }}
+      >
+        {children}
+      </h2>
+      {count !== undefined && (
+        <span
+          style={{
+            fontFamily: "var(--as-font-mono)",
+            fontSize: "0.65rem",
+            fontWeight: 600,
+            padding: "2px 8px",
+            borderRadius: 999,
+            background: "var(--as-glow)",
+            color: "var(--as-accent)",
+            border: "1px solid rgba(108,99,255,0.2)",
+          }}
+        >
+          {count}
+        </span>
+      )}
+      <div style={{ flex: 1, height: 1, background: "var(--as-border)" }} />
+    </div>
+  );
+}
+
+function EmptyState({ message, sub }) {
+  return (
+    <div
+      style={{
+        textAlign: "center",
+        padding: "3.5rem 2rem",
+        background: "var(--as-surface)",
+        border: "1px solid var(--as-border)",
+        borderRadius: "var(--as-radius-lg)",
+      }}
+    >
+      <FolderKanban
+        size={36}
+        style={{ margin: "0 auto 1rem", color: "var(--as-text3)" }}
+      />
+      <p
+        style={{
+          fontFamily: "var(--as-font-head)",
+          fontWeight: 700,
+          fontSize: "1rem",
+          color: "var(--as-text)",
+          marginBottom: "0.375rem",
+        }}
+      >
+        {message}
+      </p>
+      <p style={{ fontSize: "0.85rem", color: "var(--as-text2)" }}>{sub}</p>
+    </div>
+  );
+}
 
 export default function MyProjectsPage() {
   const router = useRouter();
@@ -28,38 +106,20 @@ export default function MyProjectsPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const [projectsResponse, invitesResponse] = await Promise.all([
+      const [projRes, invRes] = await Promise.all([
         api.get("/projects/my-projects"),
         api.get("/collabs/invitations/pending"),
       ]);
-
-      let projectsData = [];
-      let invitationsData = [];
-
-      if (Array.isArray(projectsResponse?.data)) {
-        projectsData = projectsResponse.data;
-      } else if (projectsResponse?.data?.projects) {
-        projectsData = projectsResponse.data.projects;
-      }
-
-      if (Array.isArray(invitesResponse?.data)) {
-        invitationsData = invitesResponse.data;
-      } else if (invitesResponse?.data?.invitations) {
-        invitationsData = invitesResponse.data.invitations;
-      } else if (invitesResponse?.data?.collaborations) {
-        invitationsData = invitesResponse.data.collaborations;
-      }
-
-      console.log("✅ Projects fetched:", projectsData);
-      console.log("✅ Invitations fetched:", invitationsData);
-      console.log("API URL being used:", process.env.NEXT_PUBLIC_API_URL);
-
-      setProjects(Array.isArray(projectsData) ? projectsData : []);
-      setInvitations(Array.isArray(invitationsData) ? invitationsData : []);
+      const pd = Array.isArray(projRes?.data)
+        ? projRes.data
+        : projRes?.data?.projects || [];
+      const id = Array.isArray(invRes?.data)
+        ? invRes.data
+        : invRes?.data?.invitations || invRes?.data?.collaborations || [];
+      setProjects(Array.isArray(pd) ? pd : []);
+      setInvitations(Array.isArray(id) ? id : []);
     } catch (err) {
-      console.error("❌ Failed to fetch dashboard data:", err);
-      console.error("❌ Error details:", err.response?.data);
-      setError("Could not load your projects and invitations.");
+      setError("Could not load your workspace.");
       toast.error("Could not load your dashboard.");
       setProjects([]);
       setInvitations([]);
@@ -77,213 +137,379 @@ export default function MyProjectsPage() {
     fetchAllData();
   }, [isAuthenticated, authLoading, router]);
 
-  const handleProjectDeleted = (deletedProjectId) => {
-    setProjects((currentProjects) =>
-      Array.isArray(currentProjects)
-        ? currentProjects.filter((p) => p?._id !== deletedProjectId)
-        : [],
+  const handleProjectDeleted = (id) =>
+    setProjects((p) =>
+      Array.isArray(p) ? p.filter((x) => x?._id !== id) : [],
     );
-  };
 
-  const handleAcceptInvite = async (invitationId) => {
-    const toastId = toast.loading("Accepting invitation...");
+  const handleAcceptInvite = async (invId) => {
+    const tid = toast.loading("Accepting…");
     try {
-      await api.put(`/projects/accept-invite/${invitationId}`);
-      toast.success("Invitation accepted! Project added to your list.", {
-        id: toastId,
-      });
+      await api.put(`/projects/accept-invite/${invId}`);
+      toast.success("Invitation accepted!", { id: tid });
       fetchAllData();
     } catch (err) {
-      console.error("Accept invite error:", err);
-      toast.error(err.response?.data?.message || "Failed to accept.", {
-        id: toastId,
-      });
+      toast.error(err.response?.data?.message || "Failed.", { id: tid });
     }
   };
 
-  const handleRejectInvite = async (invitationId) => {
-    const toastId = toast.loading("Rejecting invitation...");
+  const handleRejectInvite = async (invId) => {
+    const tid = toast.loading("Rejecting…");
     try {
-      await api.delete(`/projects/reject-invite/${invitationId}`);
-      toast.success("Invitation rejected.", { id: toastId });
-      setInvitations((prev) =>
-        Array.isArray(prev)
-          ? prev.filter((inv) => inv?._id !== invitationId)
-          : [],
+      await api.delete(`/projects/reject-invite/${invId}`);
+      toast.success("Rejected.", { id: tid });
+      setInvitations((p) =>
+        Array.isArray(p) ? p.filter((i) => i?._id !== invId) : [],
       );
     } catch (err) {
-      console.error("Reject invite error:", err);
-      toast.error(err.response?.data?.message || "Failed to reject.", {
-        id: toastId,
-      });
+      toast.error(err.response?.data?.message || "Failed.", { id: tid });
     }
   };
 
-  if (isLoading || authLoading) {
+  if (isLoading || authLoading)
     return (
-      <div className="text-center text-white py-20">
-        Loading Your Workspace...
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "60vh",
+          fontFamily: "var(--as-font-mono)",
+          fontSize: "0.82rem",
+          color: "var(--as-text3)",
+          letterSpacing: "0.06em",
+        }}
+      >
+        Loading workspace…
       </div>
     );
-  }
 
-  if (error) {
-    return <div className="text-center text-red-500 py-20">{error}</div>;
-  }
+  if (error)
+    return (
+      <div
+        style={{
+          textAlign: "center",
+          padding: "5rem 0",
+          color: "var(--as-coral)",
+          fontFamily: "var(--as-font-mono)",
+          fontSize: "0.85rem",
+        }}
+      >
+        {error}
+      </div>
+    );
 
   const ownedProjects =
     loggedInUser && Array.isArray(projects)
       ? projects.filter((p) => p?.createdBy?._id === loggedInUser._id)
       : [];
-
   const sharedProjects =
     loggedInUser && Array.isArray(projects)
       ? projects.filter((p) => p?.createdBy?._id !== loggedInUser._id)
       : [];
 
   return (
-    <main className="container mx-auto p-4 md:p-8">
+    <div style={{ maxWidth: 1280, margin: "0 auto" }}>
       <Toaster
         position="bottom-center"
-        toastOptions={{ style: { background: "#333", color: "#fff" } }}
+        toastOptions={{
+          style: {
+            background: "var(--as-surface)",
+            color: "var(--as-text)",
+            border: "1px solid var(--as-border2)",
+          },
+        }}
       />
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tighter text-white">
-              My Workspace
-            </h1>
-            <p className="text-slate-400">
-              Manage your projects and invitations.
-            </p>
-          </div>
-          <Button asChild className="bg-purple-600 hover:bg-purple-700">
-            <Link href="/create-project">
-              <PlusCircle className="mr-2 h-4 w-4" /> Create New Project
-            </Link>
-          </Button>
-        </div>
 
-        {/* INVITATIONs */}
-        {Array.isArray(invitations) && invitations.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold tracking-tight text-white mb-4 flex items-center">
-              <Mail className="mr-3 h-6 w-6 text-purple-400" /> Pending
-              Invitations ({invitations.length})
-            </h2>
-            <div className="space-y-4">
-              {invitations.map((invite) => (
-                <Card
-                  key={invite?._id}
-                  className="bg-zinc-900 border-purple-500/50"
+      {/* Page header */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          marginBottom: "2.5rem",
+          gap: "1rem",
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontFamily: "var(--as-font-mono)",
+              fontSize: "0.65rem",
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: "var(--as-accent)",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.6rem",
+              marginBottom: "0.6rem",
+            }}
+          >
+            <span
+              style={{
+                display: "inline-block",
+                width: 18,
+                height: 1,
+                background: "var(--as-accent)",
+              }}
+            />
+            Workspace
+          </div>
+          <h1
+            style={{
+              fontFamily: "var(--as-font-head)",
+              fontWeight: 800,
+              fontSize: "clamp(1.8rem, 3vw, 2.6rem)",
+              letterSpacing: "-0.03em",
+              color: "var(--as-text)",
+              marginBottom: "0.4rem",
+            }}
+          >
+            My Projects
+          </h1>
+          <p style={{ fontSize: "0.95rem", color: "var(--as-text2)" }}>
+            Manage your projects and invitations.
+          </p>
+        </div>
+        <Link
+          href="/create-project"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.4rem",
+            padding: "0 1.25rem",
+            height: 40,
+            borderRadius: "var(--as-radius-full)",
+            background:
+              "linear-gradient(135deg, var(--as-accent), rgba(108,99,255,0.85))",
+            color: "#fff",
+            fontFamily: "var(--as-font-body)",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+            textDecoration: "none",
+            flexShrink: 0,
+            boxShadow: "0 4px 14px rgba(108,99,255,0.25)",
+            transition: "box-shadow 0.2s, transform 0.2s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow =
+              "0 8px 24px rgba(108,99,255,0.35)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow =
+              "0 4px 14px rgba(108,99,255,0.25)";
+          }}
+        >
+          <PlusCircle size={14} /> Create New Project
+        </Link>
+      </div>
+
+      {/* Pending invitations */}
+      {Array.isArray(invitations) && invitations.length > 0 && (
+        <div style={{ marginBottom: "3rem" }}>
+          <SectionHeading
+            icon={Mail}
+            count={invitations.length}
+            color="var(--as-amber)"
+          >
+            Pending Invitations
+          </SectionHeading>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}
+          >
+            {invitations.map((invite) => (
+              <div
+                key={invite?._id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "1rem",
+                  padding: "1rem 1.25rem",
+                  background: "var(--as-surface)",
+                  border: "1px solid rgba(255,217,61,0.15)",
+                  borderRadius: "var(--as-radius-lg)",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.875rem",
+                  }}
                 >
-                  <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage
-                          src={invite?.owner?.avatarUrl}
-                          alt={invite?.owner?.name}
-                        />
-                        <AvatarFallback>
-                          {invite?.owner?.name?.substring(0, 1) || "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-slate-300 text-sm">
-                          <span className="font-semibold text-white">
-                            {invite?.owner?.name || "Unknown User"}
-                          </span>{" "}
-                          has invited you to join:
-                        </p>
-                        <p className="font-bold text-lg text-white">
-                          {invite?.project?.title || "Untitled Project"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 self-end sm:self-center">
-                      <Button
-                        onClick={() => handleAcceptInvite(invite._id)}
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
+                  <Avatar className="h-9 w-9 shrink-0">
+                    <AvatarImage src={invite?.owner?.avatarUrl} />
+                    <AvatarFallback
+                      style={{
+                        background: "var(--as-glow)",
+                        color: "var(--as-accent)",
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {invite?.owner?.name?.[0] || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p
+                      style={{
+                        fontSize: "0.875rem",
+                        color: "var(--as-text2)",
+                        margin: 0,
+                      }}
+                    >
+                      <span
+                        style={{ fontWeight: 600, color: "var(--as-text)" }}
                       >
-                        <Check size={16} />{" "}
-                        <span className="hidden sm:inline ml-2">Accept</span>
-                      </Button>
-                      <Button
-                        onClick={() => handleRejectInvite(invite._id)}
-                        size="sm"
-                        variant="destructive"
-                      >
-                        <X size={16} />{" "}
-                        <span className="hidden sm:inline ml-2">Reject</span>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                        {invite?.owner?.name || "Unknown"}
+                      </span>{" "}
+                      invited you to join:
+                    </p>
+                    <p
+                      style={{
+                        fontFamily: "var(--as-font-head)",
+                        fontWeight: 700,
+                        fontSize: "0.95rem",
+                        color: "var(--as-text)",
+                        margin: 0,
+                      }}
+                    >
+                      {invite?.project?.title || "Untitled Project"}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    onClick={() => handleAcceptInvite(invite._id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.3rem",
+                      padding: "6px 14px",
+                      borderRadius: "var(--as-radius-full)",
+                      border: "1px solid rgba(74,222,128,0.3)",
+                      background: "rgba(74,222,128,0.08)",
+                      color: "var(--as-green)",
+                      fontFamily: "var(--as-font-body)",
+                      fontSize: "0.82rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background =
+                        "rgba(74,222,128,0.15)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background =
+                        "rgba(74,222,128,0.08)")
+                    }
+                  >
+                    <Check size={13} /> Accept
+                  </button>
+                  <button
+                    onClick={() => handleRejectInvite(invite._id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.3rem",
+                      padding: "6px 14px",
+                      borderRadius: "var(--as-radius-full)",
+                      border: "1px solid rgba(255,107,107,0.25)",
+                      background: "rgba(255,107,107,0.06)",
+                      color: "var(--as-coral)",
+                      fontFamily: "var(--as-font-body)",
+                      fontSize: "0.82rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background =
+                        "rgba(255,107,107,0.12)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background =
+                        "rgba(255,107,107,0.06)")
+                    }
+                  >
+                    <X size={13} /> Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Owned projects */}
+      <div style={{ marginBottom: "3rem" }}>
+        <SectionHeading icon={FolderKanban} count={ownedProjects.length}>
+          My Created Projects
+        </SectionHeading>
+        {ownedProjects.length === 0 ? (
+          <EmptyState
+            message="No projects yet"
+            sub="Create your first project to get started."
+          />
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gap: "1.25rem",
+            }}
+          >
+            {ownedProjects.map((p) => (
+              <ProjectCard
+                key={p._id}
+                project={p}
+                isOwner={true}
+                onProjectDeleted={handleProjectDeleted}
+              />
+            ))}
           </div>
         )}
-
-        {/* OWNED PROJECTS */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold tracking-tight text-white mb-4">
-            My Created Projects ({ownedProjects.length})
-          </h2>
-          {ownedProjects.length === 0 ? (
-            <div className="text-center py-20 bg-black/20 rounded-lg">
-              <FolderKanban className="mx-auto h-12 w-12 text-slate-500" />
-              <h3 className="mt-4 text-lg font-medium text-white">
-                No projects created yet
-              </h3>
-              <p className="mt-1 text-sm text-slate-400">
-                You haven't created any projects. Create one to get started.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {ownedProjects.map((project) => (
-                <ProjectCard
-                  key={project._id}
-                  project={project}
-                  isOwner={true}
-                  onProjectDeleted={handleProjectDeleted}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* SHARED PROJECTS */}
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-white mb-4 flex items-center">
-            <Share2 className="mr-3 h-6 w-6 text-purple-400" /> Projects Shared
-            With Me ({sharedProjects.length})
-          </h2>
-          {sharedProjects.length === 0 ? (
-            <div className="text-center py-20 bg-black/20 rounded-lg">
-              <FolderKanban className="mx-auto h-12 w-12 text-slate-500" />
-              <h3 className="mt-4 text-lg font-medium text-white">
-                No projects shared with you
-              </h3>
-              <p className="mt-1 text-sm text-slate-400">
-                When you accept an invitation, the project will appear here.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sharedProjects.map((project) => (
-                <ProjectCard
-                  key={project._id}
-                  project={project}
-                  isOwner={false}
-                  onProjectDeleted={() => {}}
-                />
-              ))}
-            </div>
-          )}
-        </div>
       </div>
-    </main>
+
+      {/* Shared projects */}
+      <div>
+        <SectionHeading
+          icon={Share2}
+          count={sharedProjects.length}
+          color="var(--as-teal)"
+        >
+          Shared With Me
+        </SectionHeading>
+        {sharedProjects.length === 0 ? (
+          <EmptyState
+            message="No shared projects"
+            sub="When you accept an invitation, the project will appear here."
+          />
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+              gap: "1.25rem",
+            }}
+          >
+            {sharedProjects.map((p) => (
+              <ProjectCard
+                key={p._id}
+                project={p}
+                isOwner={false}
+                onProjectDeleted={() => {}}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
