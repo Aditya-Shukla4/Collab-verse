@@ -1,14 +1,7 @@
+// client/src/components/AuthRobot.jsx
 "use client";
 import { useEffect, useRef, useCallback } from "react";
 
-/**
- * AuthRobot
- * ─────────────────────────────────────────────────
- * • Eyes follow the cursor when watching
- * • isTypingPassword=true → robot covers eyes with hands (shy mode)
- * • Smooth transition between states
- * • Floating bob animation always running
- */
 export default function AuthRobot({ isTypingPassword = false }) {
   const leftSocketRef = useRef(null);
   const rightSocketRef = useRef(null);
@@ -18,8 +11,7 @@ export default function AuthRobot({ isTypingPassword = false }) {
   const rightHandRef = useRef(null);
   const mouse = useRef({ x: -9999, y: -9999 });
   const raf = useRef(null);
-  // Animated hand Y position (lerped)
-  const handY = useRef(60); // 60 = hidden below, 0 = covering eyes
+  const handY = useRef(60);
   const targetHandY = useRef(60);
 
   const movePupil = useCallback((socket, pupil, mx, my) => {
@@ -42,18 +34,17 @@ export default function AuthRobot({ isTypingPassword = false }) {
     window.addEventListener("mousemove", onMove, { passive: true });
 
     const loop = () => {
-      // Hand lerp
       targetHandY.current = isTypingPassword ? 0 : 60;
       handY.current += (targetHandY.current - handY.current) * 0.14;
 
       const lh = leftHandRef.current;
       const rh = rightHandRef.current;
+
+      // Dynamic inline styles ONLY for hardware-accelerated transforms
       if (lh) lh.style.transform = `translateY(${handY.current}px)`;
       if (rh) rh.style.transform = `translateY(${handY.current}px)`;
 
-      // Only track eyes when hands aren't covering
       if (handY.current < 40) {
-        // hands covering — pupils center
         if (leftPupilRef.current)
           leftPupilRef.current.style.transform = "translate(0,0)";
         if (rightPupilRef.current)
@@ -84,14 +75,8 @@ export default function AuthRobot({ isTypingPassword = false }) {
   }, [isTypingPassword, movePupil]);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        marginBottom: "1.5rem",
-      }}
-    >
-      {/* Bob animation wrapper */}
+    <div className="flex justify-center mb-6">
+      {/* Bob animation via tailwind arbitrary class or global css */}
       <div style={{ animation: "cv-robot-bob 3.5s ease-in-out infinite" }}>
         <svg
           viewBox="0 0 140 160"
@@ -99,7 +84,7 @@ export default function AuthRobot({ isTypingPassword = false }) {
           height="126"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          style={{ overflow: "visible" }}
+          className="overflow-visible"
         >
           {/* Antenna */}
           <line
@@ -161,7 +146,6 @@ export default function AuthRobot({ isTypingPassword = false }) {
             stroke="var(--as-accent)"
             strokeWidth="1.5"
           />
-          {/* Left pupil */}
           <circle
             ref={leftPupilRef}
             cx="46"
@@ -182,7 +166,6 @@ export default function AuthRobot({ isTypingPassword = false }) {
             stroke="var(--as-accent)"
             strokeWidth="1.5"
           />
-          {/* Right pupil */}
           <circle
             ref={rightPupilRef}
             cx="94"
@@ -274,11 +257,11 @@ export default function AuthRobot({ isTypingPassword = false }) {
             strokeWidth="1.5"
           />
 
-          {/* ── Hands that cover eyes (shy mode) ── */}
           {/* Left hand — covers left eye */}
           <g
             ref={leftHandRef}
-            style={{ transform: "translateY(60px)", transition: "none" }}
+            className="transition-none"
+            style={{ transform: "translateY(60px)" }}
           >
             <rect
               x="18"
@@ -289,7 +272,6 @@ export default function AuthRobot({ isTypingPassword = false }) {
               fill="var(--as-accent)"
               opacity="0.92"
             />
-            {/* fingers */}
             <rect
               x="21"
               y="18"
@@ -317,7 +299,6 @@ export default function AuthRobot({ isTypingPassword = false }) {
               fill="var(--as-accent)"
               opacity="0.85"
             />
-            {/* shine */}
             <rect
               x="22"
               y="32"
@@ -332,7 +313,8 @@ export default function AuthRobot({ isTypingPassword = false }) {
           {/* Right hand — covers right eye */}
           <g
             ref={rightHandRef}
-            style={{ transform: "translateY(60px)", transition: "none" }}
+            className="transition-none"
+            style={{ transform: "translateY(60px)" }}
           >
             <rect
               x="86"
@@ -343,7 +325,6 @@ export default function AuthRobot({ isTypingPassword = false }) {
               fill="var(--as-teal)"
               opacity="0.92"
             />
-            {/* fingers */}
             <rect
               x="89"
               y="18"
@@ -371,7 +352,6 @@ export default function AuthRobot({ isTypingPassword = false }) {
               fill="var(--as-teal)"
               opacity="0.85"
             />
-            {/* shine */}
             <rect
               x="90"
               y="32"
