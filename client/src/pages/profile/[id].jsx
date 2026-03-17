@@ -1,17 +1,11 @@
 "use client";
-
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/api/axios";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
-
-// UI Components
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   Linkedin,
   Github,
@@ -21,7 +15,154 @@ import {
   Check,
   X,
   Edit,
+  MapPin,
+  Loader2,
 } from "lucide-react";
+
+/* ── tiny reusable section card ── */
+function Section({ title, children }) {
+  return (
+    <div
+      style={{
+        background: "var(--as-surface)",
+        border: "1px solid var(--as-border)",
+        borderRadius: "var(--as-radius-lg)",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          padding: "1rem 1.5rem",
+          borderBottom: "1px solid var(--as-border)",
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: "var(--as-font-head)",
+            fontWeight: 700,
+            fontSize: "0.95rem",
+            color: "var(--as-text)",
+            margin: 0,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          {title}
+        </h2>
+      </div>
+      <div style={{ padding: "1.25rem 1.5rem" }}>{children}</div>
+    </div>
+  );
+}
+
+/* ── skill / interest pill ── */
+function Pill({ children, accent }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        fontFamily: "var(--as-font-mono)",
+        fontSize: "0.72rem",
+        letterSpacing: "0.03em",
+        padding: "3px 10px",
+        borderRadius: "var(--as-radius-sm)",
+        background: accent ? "var(--as-glow)" : "var(--as-bg3)",
+        border: `1px solid ${accent ? "rgba(108,99,255,0.25)" : "var(--as-border)"}`,
+        color: accent ? "var(--as-accent)" : "var(--as-text2)",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+/* ── action button ── */
+function ActionBtn({ onClick, disabled, children, variant = "primary" }) {
+  const [hov, setHov] = useState(false);
+
+  const styles = {
+    primary: {
+      background: hov ? "rgba(108,99,255,0.9)" : "var(--as-accent)",
+      color: "#fff",
+      border: "1px solid transparent",
+    },
+    ghost: {
+      background: hov ? "var(--as-surface2)" : "transparent",
+      color: hov ? "var(--as-text)" : "var(--as-text2)",
+      border: "1px solid var(--as-border2)",
+    },
+    success: {
+      background: "rgba(74,222,128,0.1)",
+      color: "var(--as-green)",
+      border: "1px solid rgba(74,222,128,0.25)",
+    },
+    danger: {
+      background: hov ? "rgba(255,107,107,0.15)" : "transparent",
+      color: "var(--as-coral)",
+      border: "1px solid rgba(255,107,107,0.3)",
+    },
+  };
+
+  const s = styles[variant];
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        width: "100%",
+        height: 40,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "0.4rem",
+        borderRadius: "var(--as-radius-full)",
+        fontFamily: "var(--as-font-body)",
+        fontSize: "0.875rem",
+        fontWeight: 600,
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        transition: "all 0.2s",
+        ...s,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ── social icon link ── */
+function SocialLink({ href, icon: Icon, label }) {
+  const [hov, setHov] = useState(false);
+  if (!href) return null;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={label}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        width: 36,
+        height: 36,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: "var(--as-radius-md)",
+        background: hov ? "var(--as-glow)" : "var(--as-bg3)",
+        border: `1px solid ${hov ? "rgba(108,99,255,0.3)" : "var(--as-border)"}`,
+        color: hov ? "var(--as-accent)" : "var(--as-text2)",
+        transition: "all 0.2s",
+        textDecoration: "none",
+      }}
+    >
+      <Icon size={16} />
+    </a>
+  );
+}
 
 export default function UserProfilePage() {
   const router = useRouter();
@@ -39,17 +180,14 @@ export default function UserProfilePage() {
   const [relationshipStatus, setRelationshipStatus] = useState("loading");
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  //! DATA FETCHING
-
   const fetchUserProfile = useCallback(async () => {
     if (!id) return;
     setIsLoading(true);
     setError(null);
     try {
-      const response = await api.get(`/users/${id}`);
-      setUserProfile(response.data);
-    } catch (err) {
-      console.error("Failed to fetch user profile:", err);
+      const res = await api.get(`/users/${id}`);
+      setUserProfile(res.data);
+    } catch {
       setError("Could not load user profile.");
     } finally {
       setIsLoading(false);
@@ -65,24 +203,17 @@ export default function UserProfilePage() {
     fetchUserProfile();
   }, [id, isAuthenticated, authLoading, router, fetchUserProfile]);
 
-  //! RELATIONSHIP STATUS LOGIC
   useEffect(() => {
-    if (loggedInUser && userProfile) {
-      if (loggedInUser.colleagues?.includes(userProfile._id)) {
-        setRelationshipStatus("colleagues");
-      } else if (loggedInUser.sentCollabRequests?.includes(userProfile._id)) {
-        setRelationshipStatus("sent");
-      } else if (
-        loggedInUser.receivedCollabRequests?.includes(userProfile._id)
-      ) {
-        setRelationshipStatus("received");
-      } else {
-        setRelationshipStatus("none");
-      }
-    }
+    if (!loggedInUser || !userProfile) return;
+    if (loggedInUser.colleagues?.includes(userProfile._id))
+      setRelationshipStatus("colleagues");
+    else if (loggedInUser.sentCollabRequests?.includes(userProfile._id))
+      setRelationshipStatus("sent");
+    else if (loggedInUser.receivedCollabRequests?.includes(userProfile._id))
+      setRelationshipStatus("received");
+    else setRelationshipStatus("none");
   }, [loggedInUser, userProfile]);
 
-  //! ACTION HANDLERS
   const handleAction = async (apiCall, successMessage) => {
     if (!userProfile?._id) return;
     setIsActionLoading(true);
@@ -90,13 +221,12 @@ export default function UserProfilePage() {
     try {
       await apiCall();
       toast.success(successMessage, { id: toastId });
-      await refetchUser(); // Refresh your own data
-      await fetchUserProfile(); // Refresh the profile data you are viewing
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Action failed.", {
+      await refetchUser();
+      await fetchUserProfile();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Action failed.", {
         id: toastId,
       });
-      console.error("Action failed:", error);
     } finally {
       setIsActionLoading(false);
     }
@@ -123,232 +253,380 @@ export default function UserProfilePage() {
       "Request cancelled.",
     );
 
-  //! Render
-  
+  /* ── loading / error states ── */
   if (isLoading || authLoading) {
     return (
-      <div className="text-center text-white py-10">Loading Profile...</div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "5rem",
+          color: "var(--as-text3)",
+          fontFamily: "var(--as-font-mono)",
+          fontSize: "0.85rem",
+          gap: "0.5rem",
+        }}
+      >
+        <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
+        Loading profile…
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
     );
   }
   if (error) {
-    return <div className="text-center text-red-500 py-10">Error: {error}</div>;
+    return (
+      <div
+        style={{
+          textAlign: "center",
+          padding: "5rem",
+          color: "var(--as-coral)",
+          fontFamily: "var(--as-font-mono)",
+          fontSize: "0.85rem",
+        }}
+      >
+        {error}
+      </div>
+    );
   }
   if (!userProfile) {
-    return <div className="text-center text-white py-10">User not found.</div>;
+    return (
+      <div
+        style={{
+          textAlign: "center",
+          padding: "5rem",
+          color: "var(--as-text3)",
+          fontFamily: "var(--as-font-mono)",
+          fontSize: "0.85rem",
+        }}
+      >
+        User not found.
+      </div>
+    );
   }
 
+  const initials = userProfile.name
+    ? userProfile.name.substring(0, 2).toUpperCase()
+    : "DV";
+  const isOwnProfile = loggedInUser?._id === userProfile._id;
+
   const renderActionButtons = () => {
-    if (loggedInUser?._id === userProfile._id) {
+    if (isOwnProfile) {
       return (
-        <Link href="/profile/edit" passHref>
-          <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold">
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Your Profile
-          </Button>
+        <Link
+          href="/profile/edit"
+          style={{ textDecoration: "none", display: "block" }}
+        >
+          <ActionBtn variant="ghost">
+            <Edit size={14} /> Edit Your Profile
+          </ActionBtn>
         </Link>
       );
     }
-
     switch (relationshipStatus) {
       case "colleagues":
         return (
-          <Button disabled className="w-full bg-green-600/50 text-white">
-            <Check className="mr-2 h-4 w-4" /> Colleagues
-          </Button>
+          <ActionBtn variant="success" disabled>
+            <Check size={14} /> Colleagues
+          </ActionBtn>
         );
       case "sent":
         return (
-          <Button
+          <ActionBtn
+            variant="ghost"
             onClick={handleCancelRequest}
             disabled={isActionLoading}
-            variant="outline"
-            className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
           >
-            {isActionLoading ? "Cancelling..." : "Cancel Request"}
-          </Button>
+            {isActionLoading ? <Loader2 size={14} /> : <X size={14} />}
+            {isActionLoading ? "Cancelling…" : "Cancel Request"}
+          </ActionBtn>
         );
       case "received":
         return (
-          <div className="space-y-3">
-            <p className="text-purple-200 text-sm text-center font-medium bg-purple-900/30 border border-purple-500/50 rounded-lg p-3">
-              Collaboration Request Received
-            </p>
-            <Button
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+          >
+            <div
+              style={{
+                padding: "0.6rem 1rem",
+                borderRadius: "var(--as-radius-md)",
+                background: "var(--as-glow)",
+                border: "1px solid rgba(108,99,255,0.2)",
+                textAlign: "center",
+                fontFamily: "var(--as-font-mono)",
+                fontSize: "0.72rem",
+                color: "var(--as-accent)",
+                letterSpacing: "0.04em",
+              }}
+            >
+              Collaboration request received
+            </div>
+            <ActionBtn
+              variant="success"
               onClick={handleAcceptRequest}
               disabled={isActionLoading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
             >
-              <Check className="mr-2 h-4 w-4" /> Accept
-            </Button>
-            <Button
+              <Check size={14} /> Accept
+            </ActionBtn>
+            <ActionBtn
+              variant="danger"
               onClick={handleRejectRequest}
               disabled={isActionLoading}
-              variant="outline"
-              className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
             >
-              <X className="mr-2 h-4 w-4" /> Decline
-            </Button>
+              <X size={14} /> Decline
+            </ActionBtn>
           </div>
         );
       case "none":
         return (
-          <Button
-            onClick={handleSendRequest}
-            disabled={isActionLoading}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            {isActionLoading ? "Sending..." : "Send Collab Request"}
-          </Button>
+          <ActionBtn onClick={handleSendRequest} disabled={isActionLoading}>
+            {isActionLoading ? <Loader2 size={14} /> : <UserPlus size={14} />}
+            {isActionLoading ? "Sending…" : "Send Collab Request"}
+          </ActionBtn>
         );
       default:
-        return (
-          <Button disabled className="w-full">
-            Loading...
-          </Button>
-        );
+        return <ActionBtn disabled>Loading…</ActionBtn>;
     }
   };
 
   return (
-    <main className="container mx-auto p-4 md:p-8 text-white">
+    <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <Toaster
         position="bottom-center"
-        toastOptions={{ style: { background: "#333", color: "#fff" } }}
+        toastOptions={{
+          style: {
+            background: "var(--as-surface)",
+            color: "var(--as-text)",
+            border: "1px solid var(--as-border2)",
+            fontFamily: "var(--as-font-body)",
+            fontSize: "0.875rem",
+          },
+        }}
       />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column */}
-        <div className="lg:col-span-1 space-y-6">
-          <Card className="bg-black/30 backdrop-blur-lg border-white/10 p-6 text-center flex flex-col items-center">
-            <Avatar className="h-32 w-32 border-4 border-purple-400">
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "280px 1fr",
+          gap: "1.5rem",
+          alignItems: "start",
+        }}
+      >
+        {/* ── Left column ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          {/* Profile card */}
+          <div
+            style={{
+              background: "var(--as-surface)",
+              border: "1px solid var(--as-border)",
+              borderRadius: "var(--as-radius-lg)",
+              padding: "2rem 1.5rem",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+            }}
+          >
+            {/* Avatar */}
+            <Avatar
+              style={{
+                width: 88,
+                height: 88,
+                border: "3px solid var(--as-border2)",
+                marginBottom: "1rem",
+              }}
+            >
               <AvatarImage src={userProfile.avatarUrl} alt={userProfile.name} />
-              <AvatarFallback className="bg-slate-700 text-4xl">
-                {userProfile.name
-                  ? userProfile.name.substring(0, 2).toUpperCase()
-                  : "DV"}
+              <AvatarFallback
+                style={{
+                  background: "var(--as-glow)",
+                  color: "var(--as-accent)",
+                  fontFamily: "var(--as-font-head)",
+                  fontWeight: 800,
+                  fontSize: "1.5rem",
+                }}
+              >
+                {initials}
               </AvatarFallback>
             </Avatar>
-            <h1 className="text-3xl font-bold mt-4 text-white">
+
+            {/* Name */}
+            <h1
+              style={{
+                fontFamily: "var(--as-font-head)",
+                fontWeight: 800,
+                fontSize: "1.4rem",
+                letterSpacing: "-0.03em",
+                color: "var(--as-text)",
+                margin: "0 0 0.25rem",
+              }}
+            >
               {userProfile.name}
             </h1>
-            <p className="text-purple-300">
+
+            {/* Occupation */}
+            <p
+              style={{
+                fontSize: "0.875rem",
+                color: "var(--as-accent)",
+                fontWeight: 500,
+                margin: "0 0 0.25rem",
+              }}
+            >
               {userProfile.occupation || "Developer"}
             </p>
-            <p className="text-slate-400 text-sm mt-1">
-              {userProfile.location || "Location not specified"}
-            </p>
-            <div className="flex justify-center gap-4 mt-4">
-              {userProfile.githubUrl && (
-                <a
-                  href={userProfile.githubUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-slate-300 hover:text-purple-400"
-                >
-                  <Github size={24} />
-                </a>
-              )}
-              {userProfile.linkedinUrl && (
-                <a
-                  href={userProfile.linkedinUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-slate-300 hover:text-purple-400"
-                >
-                  <Linkedin size={24} />
-                </a>
-              )}
-              {userProfile.portfolioUrl && (
-                <a
-                  href={userProfile.portfolioUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-slate-300 hover:text-purple-400"
-                >
-                  <Globe size={24} />
-                </a>
-              )}
-              {userProfile.otherUrl && (
-                <a
-                  href={userProfile.otherUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-slate-300 hover:text-purple-400"
-                >
-                  <LinkIcon size={24} />
-                </a>
-              )}
+
+            {/* Location */}
+            {userProfile.location && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.3rem",
+                  fontSize: "0.8rem",
+                  color: "var(--as-text3)",
+                  fontFamily: "var(--as-font-mono)",
+                  marginBottom: "1rem",
+                }}
+              >
+                <MapPin size={11} />
+                {userProfile.location}
+              </div>
+            )}
+
+            {/* Divider */}
+            <div
+              style={{
+                width: "100%",
+                height: 1,
+                background: "var(--as-border)",
+                margin: "0.75rem 0",
+              }}
+            />
+
+            {/* Social links */}
+            <div
+              style={{
+                display: "flex",
+                gap: "0.5rem",
+                marginBottom: "1.25rem",
+              }}
+            >
+              <SocialLink
+                href={userProfile.githubUrl}
+                icon={Github}
+                label="GitHub"
+              />
+              <SocialLink
+                href={userProfile.linkedinUrl}
+                icon={Linkedin}
+                label="LinkedIn"
+              />
+              <SocialLink
+                href={userProfile.portfolioUrl}
+                icon={Globe}
+                label="Portfolio"
+              />
+              <SocialLink
+                href={userProfile.otherUrl}
+                icon={LinkIcon}
+                label="Other"
+              />
             </div>
-            <div className="w-full mt-6">{renderActionButtons()}</div>
-          </Card>
+
+            {/* Action button */}
+            <div style={{ width: "100%" }}>{renderActionButtons()}</div>
+          </div>
         </div>
 
-        {/* Right Column */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="bg-black/30 backdrop-blur-lg border-white/10">
-            <CardHeader>
-              <h2 className="text-xl font-semibold text-white">About Me</h2>
-            </CardHeader>
-            <CardContent>
-              <p className="text-slate-300 whitespace-pre-wrap">
-                {userProfile.bio || "No bio available."}
-              </p>
-            </CardContent>
-          </Card>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-black/30 backdrop-blur-lg border-white/10">
-              <CardHeader>
-                <h2 className="text-xl font-semibold text-white">Skills</h2>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-2">
-                {userProfile.skills?.length > 0 ? (
-                  userProfile.skills.map((skill) => (
-                    <Badge
-                      key={skill}
-                      className="bg-purple-600/50 text-purple-200 border-purple-500"
-                    >
-                      {skill}
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-slate-400 text-sm">No skills listed</p>
-                )}
-              </CardContent>
-            </Card>
-            <Card className="bg-black/30 backdrop-blur-lg border-white/10">
-              <CardHeader>
-                <h2 className="text-xl font-semibold text-white">Interests</h2>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-2">
-                {userProfile.interests?.length > 0 ? (
-                  userProfile.interests.map((interest) => (
-                    <Badge
-                      key={interest}
-                      className="bg-purple-600/50 text-purple-200 border-purple-500"
-                    >
-                      {interest}
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-slate-400 text-sm">No interests listed</p>
-                )}
-              </CardContent>
-            </Card>
+        {/* ── Right column ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          {/* About */}
+          <Section title="About">
+            <p
+              style={{
+                fontSize: "0.9rem",
+                color: "var(--as-text2)",
+                lineHeight: 1.75,
+                margin: 0,
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {userProfile.bio || "No bio available."}
+            </p>
+          </Section>
+
+          {/* Skills + Interests side by side */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "1rem",
+            }}
+          >
+            <Section title="Skills">
+              {userProfile.skills?.length > 0 ? (
+                <div
+                  style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}
+                >
+                  {userProfile.skills.map((s) => (
+                    <Pill key={s} accent>
+                      {s}
+                    </Pill>
+                  ))}
+                </div>
+              ) : (
+                <p
+                  style={{
+                    fontSize: "0.85rem",
+                    color: "var(--as-text3)",
+                    margin: 0,
+                  }}
+                >
+                  No skills listed.
+                </p>
+              )}
+            </Section>
+
+            <Section title="Interests">
+              {userProfile.interests?.length > 0 ? (
+                <div
+                  style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}
+                >
+                  {userProfile.interests.map((i) => (
+                    <Pill key={i}>{i}</Pill>
+                  ))}
+                </div>
+              ) : (
+                <p
+                  style={{
+                    fontSize: "0.85rem",
+                    color: "var(--as-text3)",
+                    margin: 0,
+                  }}
+                >
+                  No interests listed.
+                </p>
+              )}
+            </Section>
           </div>
-          <Card className="bg-black/30 backdrop-blur-lg border-white/10">
-            <CardHeader>
-              <h2 className="text-xl font-semibold text-white">
-                Collaboration Preferences
-              </h2>
-            </CardHeader>
-            <CardContent>
-              <p className="text-slate-300 whitespace-pre-wrap">
-                {userProfile.collabPrefs || "No preferences specified."}
-              </p>
-            </CardContent>
-          </Card>
+
+          {/* Collab prefs */}
+          <Section title="Collaboration Preferences">
+            <p
+              style={{
+                fontSize: "0.9rem",
+                color: "var(--as-text2)",
+                lineHeight: 1.75,
+                margin: 0,
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {userProfile.collabPrefs || "No preferences specified."}
+            </p>
+          </Section>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

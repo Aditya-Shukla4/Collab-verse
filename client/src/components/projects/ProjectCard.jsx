@@ -2,16 +2,7 @@ import { useState } from "react";
 import Link from "next/link";
 import api from "@/api/axios";
 import toast from "react-hot-toast";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,20 +28,34 @@ import {
   Trash2,
 } from "lucide-react";
 
+const statusConfig = {
+  "Actively Recruiting": {
+    color: "var(--as-green)",
+    bg: "rgba(74,222,128,0.08)",
+    border: "rgba(74,222,128,0.2)",
+  },
+  "In Progress": {
+    color: "var(--as-accent)",
+    bg: "rgba(108,99,255,0.08)",
+    border: "rgba(108,99,255,0.2)",
+  },
+  Planning: {
+    color: "var(--as-amber)",
+    bg: "rgba(255,217,61,0.08)",
+    border: "rgba(255,217,61,0.2)",
+  },
+  default: {
+    color: "var(--as-text3)",
+    bg: "var(--as-bg3)",
+    border: "var(--as-border)",
+  },
+};
+
 const ProjectCard = ({ project, isOwner, onProjectDeleted }) => {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const getStatusClass = (status) => {
-    switch (status) {
-      case "Actively Recruiting":
-        return "bg-green-600/80 border-green-500 text-green-100";
-      case "In Progress":
-        return "bg-blue-600/80 border-blue-500 text-blue-100";
-      default:
-        return "bg-zinc-700/80 border-zinc-600 text-zinc-300";
-    }
-  };
+  const s = statusConfig[project.status] || statusConfig.default;
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -58,14 +63,11 @@ const ProjectCard = ({ project, isOwner, onProjectDeleted }) => {
     try {
       await api.delete(`/projects/${project._id}`);
       toast.dismiss();
-      toast.success("Project Deleted!");
-      if (onProjectDeleted) {
-        onProjectDeleted(project._id);
-      }
-    } catch (error) {
+      toast.success("Project deleted!");
+      onProjectDeleted?.(project._id);
+    } catch (err) {
       toast.dismiss();
       toast.error("Failed to delete project.");
-      console.error("Delete failed:", error);
     } finally {
       setIsDeleting(false);
       setIsAlertOpen(false);
@@ -74,136 +76,379 @@ const ProjectCard = ({ project, isOwner, onProjectDeleted }) => {
 
   return (
     <>
-      <Card className="bg-zinc-900 border border-zinc-800 text-white flex flex-col h-full transition-all duration-300 hover:border-purple-500 hover:shadow-lg hover:shadow-purple-900/20 group relative">
-        {/* ✅ Owner ke liye saaf-suthra Dropdown Menu */}
+      <div
+        style={{
+          background: "var(--as-surface)",
+          border: "1px solid var(--as-border)",
+          borderRadius: "var(--as-radius-lg)",
+          padding: "1.5rem",
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          position: "relative",
+          transition: "border-color 0.2s, transform 0.2s, box-shadow 0.2s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.borderColor = "rgba(108,99,255,0.35)";
+          e.currentTarget.style.transform = "translateY(-3px)";
+          e.currentTarget.style.boxShadow = "0 12px 40px rgba(108,99,255,0.12)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.borderColor = "var(--as-border)";
+          e.currentTarget.style.transform = "translateY(0)";
+          e.currentTarget.style.boxShadow = "none";
+        }}
+      >
+        {/* Owner menu */}
         {isOwner && (
-          <div className="absolute top-4 right-4 z-10">
+          <div
+            style={{
+              position: "absolute",
+              top: "1rem",
+              right: "1rem",
+              zIndex: 10,
+            }}
+          >
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full hover:bg-zinc-800"
+                <button
+                  style={{
+                    width: 30,
+                    height: 30,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 6,
+                    border: "1px solid var(--as-border2)",
+                    background: "var(--as-bg3)",
+                    color: "var(--as-text3)",
+                    cursor: "pointer",
+                    transition: "background 0.15s, color 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "var(--as-surface2)";
+                    e.currentTarget.style.color = "var(--as-text)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "var(--as-bg3)";
+                    e.currentTarget.style.color = "var(--as-text3)";
+                  }}
                 >
-                  <MoreVertical size={16} />
-                </Button>
+                  <MoreVertical size={14} />
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="bg-zinc-900 border-zinc-700 text-white"
+                style={{
+                  background: "var(--as-surface)",
+                  border: "1px solid var(--as-border2)",
+                  borderRadius: "var(--as-radius-md)",
+                  padding: "0.25rem",
+                  minWidth: 140,
+                }}
               >
                 <DropdownMenuItem asChild>
                   <Link
                     href={`/projects/edit/${project._id}`}
-                    className="flex items-center cursor-pointer"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      padding: "0.5rem 0.75rem",
+                      borderRadius: "var(--as-radius-sm)",
+                      fontSize: "0.85rem",
+                      color: "var(--as-text2)",
+                      textDecoration: "none",
+                      cursor: "pointer",
+                      transition: "background 0.15s, color 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "var(--as-bg3)";
+                      e.currentTarget.style.color = "var(--as-text)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = "var(--as-text2)";
+                    }}
                   >
-                    <Edit className="mr-2 h-4 w-4" /> Edit
+                    <Edit size={13} /> Edit
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setIsAlertOpen(true)}
-                  className="text-red-500 focus:text-red-400 focus:bg-red-900/50 cursor-pointer"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    padding: "0.5rem 0.75rem",
+                    borderRadius: "var(--as-radius-sm)",
+                    fontSize: "0.85rem",
+                    color: "var(--as-coral)",
+                    cursor: "pointer",
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "var(--as-glow-coral)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
                 >
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                  <Trash2 size={13} /> Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         )}
 
-        <CardHeader>
-          <CardTitle className="text-xl font-bold group-hover:text-purple-400 transition-colors pr-10">
-            {project.title}
-          </CardTitle>
-          <Badge
-            className={`font-normal text-xs self-start ${getStatusClass(
-              project.status
-            )}`}
-          >
-            {project.status || "Planning"}
-          </Badge>
-        </CardHeader>
+        {/* Title */}
+        <p
+          style={{
+            fontFamily: "var(--as-font-head)",
+            fontWeight: 700,
+            fontSize: "1.05rem",
+            color: "var(--as-text)",
+            marginBottom: "0.625rem",
+            paddingRight: isOwner ? "2rem" : 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {project.title}
+        </p>
 
-        <CardContent className="flex-grow space-y-4">
-          <p className="text-zinc-400 text-sm line-clamp-2">
-            {project.description}
-          </p>
-          <div>
-            <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold mb-2 flex items-center">
-              <Users className="mr-1.5 h-4 w-4" /> Looking For
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {project.rolesNeeded?.slice(0, 3).map((role) => (
-                <Badge
+        {/* Status badge */}
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            fontFamily: "var(--as-font-mono)",
+            fontSize: "0.65rem",
+            letterSpacing: "0.04em",
+            color: s.color,
+            background: s.bg,
+            border: `1px solid ${s.border}`,
+            borderRadius: "var(--as-radius-full)",
+            padding: "2px 9px",
+            marginBottom: "1rem",
+            alignSelf: "flex-start",
+          }}
+        >
+          {project.status || "Planning"}
+        </span>
+
+        {/* Description */}
+        <p
+          style={{
+            fontSize: "0.85rem",
+            color: "var(--as-text2)",
+            lineHeight: 1.65,
+            marginBottom: "1.25rem",
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+          }}
+        >
+          {project.description}
+        </p>
+
+        {/* Looking For */}
+        {project.rolesNeeded?.length > 0 && (
+          <div style={{ marginBottom: "1rem" }}>
+            <p
+              style={{
+                fontFamily: "var(--as-font-mono)",
+                fontSize: "0.62rem",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "var(--as-text3)",
+                marginBottom: "0.5rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.3rem",
+              }}
+            >
+              <Users size={11} /> Looking For
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
+              {project.rolesNeeded.slice(0, 3).map((role) => (
+                <span
                   key={role}
-                  variant="outline"
-                  className="text-zinc-300 border-zinc-600"
+                  style={{
+                    background: "var(--as-glow)",
+                    border: "1px solid rgba(108,99,255,0.2)",
+                    borderRadius: "var(--as-radius-sm)",
+                    padding: "2px 8px",
+                    fontFamily: "var(--as-font-mono)",
+                    fontSize: "0.7rem",
+                    color: "var(--as-accent)",
+                  }}
                 >
                   {role}
-                </Badge>
+                </span>
               ))}
             </div>
           </div>
-          <div>
-            <h4 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold mb-2 flex items-center">
-              <Code className="mr-1.5 h-4 w-4" /> Tech Stack
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {project.techStack?.slice(0, 3).map((tech) => (
-                <Badge
+        )}
+
+        {/* Tech Stack */}
+        {project.techStack?.length > 0 && (
+          <div style={{ marginBottom: "1.25rem" }}>
+            <p
+              style={{
+                fontFamily: "var(--as-font-mono)",
+                fontSize: "0.62rem",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "var(--as-text3)",
+                marginBottom: "0.5rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.3rem",
+              }}
+            >
+              <Code size={11} /> Tech Stack
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
+              {project.techStack.slice(0, 4).map((tech) => (
+                <span
                   key={tech}
-                  className="bg-zinc-800 text-zinc-300 font-normal"
+                  style={{
+                    background: "var(--as-bg3)",
+                    border: "1px solid var(--as-border)",
+                    borderRadius: "var(--as-radius-sm)",
+                    padding: "2px 8px",
+                    fontFamily: "var(--as-font-mono)",
+                    fontSize: "0.7rem",
+                    color: "var(--as-text2)",
+                  }}
                 >
                   {tech}
-                </Badge>
+                </span>
               ))}
             </div>
           </div>
-        </CardContent>
+        )}
 
-        <CardFooter className="flex justify-between items-center pt-4">
-          <div className="flex items-center -space-x-3">
-            {project.members?.slice(0, 3).map((member) => (
+        {/* Footer */}
+        <div
+          style={{
+            marginTop: "auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          {/* Member avatars */}
+          <div style={{ display: "flex" }}>
+            {project.members?.slice(0, 3).map((member, i) => (
               <Avatar
                 key={member._id}
-                className="h-8 w-8 border-2 border-zinc-900"
+                className="h-7 w-7"
+                style={{
+                  border: "2px solid var(--as-surface)",
+                  marginLeft: i > 0 ? "-8px" : 0,
+                }}
               >
                 <AvatarImage src={member.avatarUrl} alt={member.name} />
-                <AvatarFallback>{member.name?.substring(0, 1)}</AvatarFallback>
+                <AvatarFallback
+                  style={{
+                    background: "var(--as-glow)",
+                    color: "var(--as-accent)",
+                    fontSize: "0.6rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  {member.name?.substring(0, 1)}
+                </AvatarFallback>
               </Avatar>
             ))}
           </div>
-          <Button
-            asChild
-            size="sm"
-            variant="ghost"
-            className="text-zinc-300 hover:text-white hover:bg-zinc-800"
-          >
-            <Link href={`/projects/${project._id}`}>
-              View Project <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </CardFooter>
-      </Card>
 
-      {/* ✅ Delete ke liye professional Confirmation Box */}
+          {/* CTA */}
+          <Link
+            href={`/projects/${project._id}`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.3rem",
+              fontFamily: "var(--as-font-body)",
+              fontSize: "0.82rem",
+              fontWeight: 600,
+              color: "var(--as-text2)",
+              textDecoration: "none",
+              transition: "color 0.15s",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.color = "var(--as-accent)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.color = "var(--as-text2)")
+            }
+          >
+            View Project <ArrowRight size={13} />
+          </Link>
+        </div>
+      </div>
+
+      {/* Delete confirmation */}
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-        <AlertDialogContent className="bg-zinc-900 border-zinc-700 text-white">
+        <AlertDialogContent
+          style={{
+            background: "var(--as-surface)",
+            border: "1px solid var(--as-border2)",
+            borderRadius: "var(--as-radius-lg)",
+            color: "var(--as-text)",
+          }}
+        >
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription className="text-zinc-400">
-              This action cannot be undone. This will permanently delete your
-              project.
+            <AlertDialogTitle
+              style={{
+                fontFamily: "var(--as-font-head)",
+                fontWeight: 700,
+                color: "var(--as-text)",
+              }}
+            >
+              Delete this project?
+            </AlertDialogTitle>
+            <AlertDialogDescription
+              style={{ color: "var(--as-text2)", fontSize: "0.875rem" }}
+            >
+              This action cannot be undone. The project will be permanently
+              deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel
+              style={{
+                background: "var(--as-bg3)",
+                border: "1px solid var(--as-border2)",
+                color: "var(--as-text2)",
+                borderRadius: "var(--as-radius-md)",
+                fontFamily: "var(--as-font-body)",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
+              style={{
+                background: isDeleting
+                  ? "rgba(255,107,107,0.4)"
+                  : "linear-gradient(135deg, var(--as-coral), rgba(255,107,107,0.8))",
+                border: "none",
+                color: "#fff",
+                borderRadius: "var(--as-radius-md)",
+                fontFamily: "var(--as-font-body)",
+                fontWeight: 600,
+                cursor: isDeleting ? "not-allowed" : "pointer",
+              }}
             >
-              {isDeleting ? "Deleting..." : "Yes, delete project"}
+              {isDeleting ? "Deleting…" : "Yes, delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
