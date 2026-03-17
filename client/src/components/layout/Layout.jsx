@@ -3,24 +3,39 @@ import Sidebar from "./Sidebar";
 import Header from "./Header";
 
 export default function Layout({ children }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-black to-purple-950/50 text-white">
-      <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "var(--as-bg)",
+        color: "var(--as-text)",
+        display: "flex",
+      }}
+    >
+      <Sidebar
+        collapsed={collapsed}
+        onCollapse={() => setCollapsed(true)}
+        mobileOpen={mobileOpen}
+        onMobileClose={() => setMobileOpen(false)}
+      />
 
       <div
-        className={`transition-all duration-300 ${
-          isSidebarOpen ? "lg:ml-64" : "lg:ml-0"
-        }`}
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+        }}
       >
-        <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
-
-        <main className="p-4 md:p-8">{children}</main>
+        <Header
+          onMobileToggle={() => setMobileOpen((v) => !v)}
+          collapsed={collapsed}
+          onExpand={() => setCollapsed(false)}
+        />
+        <main style={{ flex: 1, padding: "2.5rem 3rem" }}>{children}</main>
       </div>
     </div>
   );

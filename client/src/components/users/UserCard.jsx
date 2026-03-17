@@ -1,88 +1,232 @@
 import Link from "next/link";
-import { Card, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
 
 const techIcons = {
   react: "⚛️",
   "node.js": "🟢",
-  nextjs: "🔘",
+  nextjs: "▲",
   mongodb: "🍃",
-  javascript: "🟡",
+  javascript: "JS",
   python: "🐍",
+  typescript: "TS",
+  vue: "🟩",
+  go: "🔵",
+};
+
+const statusConfig = {
+  "Open to Collab": {
+    color: "var(--as-green)",
+    bg: "rgba(74,222,128,0.08)",
+    border: "rgba(74,222,128,0.2)",
+  },
+  "Seeking Opportunities": {
+    color: "var(--as-amber)",
+    bg: "rgba(255,217,61,0.08)",
+    border: "rgba(255,217,61,0.2)",
+  },
+  default: {
+    color: "var(--as-text3)",
+    bg: "var(--as-bg3)",
+    border: "var(--as-border)",
+  },
 };
 
 const UserCard = ({ dev }) => {
-  const getStatusClass = (status) => {
-    switch (status) {
-      case "Open to Collab":
-        return "bg-green-600/80 border-green-500 text-green-100";
-      case "Seeking Opportunities":
-        return "bg-yellow-600/80 border-yellow-500 text-yellow-100";
-      default:
-        return "bg-zinc-700/80 border-zinc-600 text-zinc-300";
-    }
-  };
+  const s = statusConfig[dev.collaborationStatus] || statusConfig.default;
 
   return (
-    <Card className="bg-zinc-900 border border-zinc-800 text-white flex flex-col h-full p-6 transition-all duration-300 hover:border-purple-500 hover:shadow-lg hover:shadow-purple-900/20 group">
-      <div className="flex items-center gap-4 mb-4">
-        <Avatar className="h-14 w-14 border-2 border-zinc-700 group-hover:border-purple-400 transition-colors">
+    <div
+      style={{
+        background: "var(--as-surface)",
+        border: "1px solid var(--as-border)",
+        borderRadius: "var(--as-radius-lg)",
+        padding: "1.5rem",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        transition: "border-color 0.2s, transform 0.2s, box-shadow 0.2s",
+        cursor: "default",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = "rgba(108,99,255,0.35)";
+        e.currentTarget.style.transform = "translateY(-3px)";
+        e.currentTarget.style.boxShadow = "0 12px 40px rgba(108,99,255,0.12)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = "var(--as-border)";
+        e.currentTarget.style.transform = "translateY(0)";
+        e.currentTarget.style.boxShadow = "none";
+      }}
+    >
+      {/* Header row */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.875rem",
+          marginBottom: "1rem",
+        }}
+      >
+        <Avatar
+          className="h-12 w-12 shrink-0"
+          style={{ border: "2px solid var(--as-border2)" }}
+        >
           <AvatarImage src={dev.avatarUrl} alt={dev.name} />
-          <AvatarFallback className="bg-zinc-800 text-zinc-300">
+          <AvatarFallback
+            style={{
+              background: "var(--as-glow)",
+              color: "var(--as-accent)",
+              fontFamily: "var(--as-font-head)",
+              fontWeight: 700,
+              fontSize: "0.82rem",
+            }}
+          >
             {dev.name ? dev.name.substring(0, 2).toUpperCase() : "DV"}
           </AvatarFallback>
         </Avatar>
-        <div className="flex-1">
-          <CardTitle className="text-lg font-semibold">{dev.name}</CardTitle>
-          <CardDescription className="text-zinc-400 text-sm">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p
+            style={{
+              fontFamily: "var(--as-font-head)",
+              fontWeight: 700,
+              fontSize: "1rem",
+              color: "var(--as-text)",
+              margin: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {dev.name}
+          </p>
+          <p
+            style={{
+              fontSize: "0.82rem",
+              color: "var(--as-text2)",
+              margin: "2px 0 0",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
             {dev.occupation || "Developer"}
-          </CardDescription>
+          </p>
         </div>
       </div>
 
-      <div className="mb-4">
-        <Badge
-          className={`font-normal ${getStatusClass(dev.collaborationStatus)}`}
+      {/* Status badge */}
+      <div style={{ marginBottom: "1rem" }}>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.3rem",
+            fontFamily: "var(--as-font-mono)",
+            fontSize: "0.68rem",
+            letterSpacing: "0.04em",
+            color: s.color,
+            background: s.bg,
+            border: `1px solid ${s.border}`,
+            borderRadius: "var(--as-radius-full)",
+            padding: "3px 10px",
+          }}
         >
-          <Sparkles className="mr-1.5 h-3 w-3" />
+          <Sparkles size={10} />
           {dev.collaborationStatus || "Just Browsing"}
-        </Badge>
+        </span>
       </div>
 
-      <div className="mb-4">
-        <h3 className="text-xs uppercase tracking-wider text-zinc-500 font-semibold mb-2">
-          Top Skills
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {dev.skills?.slice(0, 3).map((skill) => (
-            <div
-              key={skill}
-              className="flex items-center bg-zinc-800 border-zinc-700 text-zinc-300 font-normal px-2 py-1 rounded-md text-sm"
-            >
-              <span className="mr-1.5">
-                {techIcons[skill.toLowerCase()] || "⚡️"}
+      {/* Skills */}
+      {dev.skills?.length > 0 && (
+        <div style={{ marginBottom: "1rem" }}>
+          <p
+            style={{
+              fontFamily: "var(--as-font-mono)",
+              fontSize: "0.62rem",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "var(--as-text3)",
+              marginBottom: "0.5rem",
+            }}
+          >
+            Top Skills
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.375rem" }}>
+            {dev.skills.slice(0, 4).map((skill) => (
+              <span
+                key={skill}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.25rem",
+                  background: "var(--as-bg3)",
+                  border: "1px solid var(--as-border)",
+                  borderRadius: "var(--as-radius-sm)",
+                  padding: "3px 8px",
+                  fontFamily: "var(--as-font-mono)",
+                  fontSize: "0.72rem",
+                  color: "var(--as-text2)",
+                }}
+              >
+                <span style={{ fontSize: "0.7rem" }}>
+                  {techIcons[skill.toLowerCase()] || "◈"}
+                </span>
+                {skill}
               </span>
-              {skill}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="flex-grow mb-4">
-        <p className="text-zinc-400 text-sm line-clamp-2">
-          {dev.bio || "No bio available."}
-        </p>
-      </div>
+      {/* Bio */}
+      <p
+        style={{
+          fontSize: "0.85rem",
+          color: "var(--as-text2)",
+          lineHeight: 1.65,
+          flex: 1,
+          marginBottom: "1.25rem",
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+        }}
+      >
+        {dev.bio || "No bio available."}
+      </p>
 
-      <Link href={`/profile/${dev._id}`} passHref>
-        <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold">
-          View Profile
-        </Button>
+      {/* CTA */}
+      <Link
+        href={`/profile/${dev._id}`}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "0.4rem",
+          height: 38,
+          borderRadius: "var(--as-radius-full)",
+          background: "var(--as-glow)",
+          border: "1px solid rgba(108,99,255,0.25)",
+          color: "var(--as-accent)",
+          fontFamily: "var(--as-font-body)",
+          fontSize: "0.875rem",
+          fontWeight: 600,
+          textDecoration: "none",
+          transition: "background 0.2s, box-shadow 0.2s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(108,99,255,0.18)";
+          e.currentTarget.style.boxShadow = "0 4px 16px rgba(108,99,255,0.2)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "var(--as-glow)";
+          e.currentTarget.style.boxShadow = "none";
+        }}
+      >
+        View Profile <ArrowRight size={14} />
       </Link>
-    </Card>
+    </div>
   );
 };
 
