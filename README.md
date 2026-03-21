@@ -1,153 +1,157 @@
-# 🤝 Collab-verse — Match, Code, and Create with the Perfect Developer Partner.\!
+# Collab Verse
 
-A web platform built to solve the fundamental challenge of **finding and connecting with the right developers** for projects, hackathons, and collaborative learning.
+**Find developers. Build together. Ship faster.**
 
------
+Collab Verse is a full-stack platform for developer team formation — skill-based matchmaking, real-time collaboration, and an integrated code execution environment, all in one place.
 
-## 📝 Description
+🔗 **[Live Demo](https://collab-verse.vercel.app)**
 
-**Collab-verse** is a dynamic web platform designed to streamline the process of team formation in the developer community. Inspired by modern matching applications, it connects engineers and creators based on shared skills, interests, and project goals. By providing GitHub-verified profiles, intuitive skill matching, and a real-time collaborative environment, Collab-verse ensures you spend less time searching for teammates and more time building.
+---
 
------
+## The Problem
 
-## 🚀 Live Demo
+Finding the right collaborator for a project or hackathon is painful. Discord servers, Reddit posts, cold DMs — none of it works well. Collab Verse fixes this by matching developers based on verified skills, project needs, and availability.
 
-Explore the live application and find your next collaborator today:
+---
 
-**[Launch Collab-verse](https://collab-verse.vercel.app/)**
+## Features
 
------
+- **Skill-based matchmaking** — find developers by tech stack, domain, and collaboration status
+- **GitHub-verified profiles** — real contribution history, no fake credentials
+- **Project listings** — post your project, specify roles needed, accept/reject join requests
+- **Real-time collaborative editor** — Monaco editor with live sync via Socket.io
+- **Integrated terminal** — run Python, JavaScript, C++, Java, Go, Rust directly in the browser
+- **Project chat** — persistent messaging per project room
+- **Collab requests** — send/accept/reject colleague requests
 
-## ✨ Vision
+---
 
-Our vision is to be the **leading global platform for developer team formation**, fundamentally changing how individuals launch projects, participate in hackathons, and grow their professional networks. We aim to foster a culture of seamless, efficient, and high-quality technical collaboration worldwide.
+## Tech Stack
 
------
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js, Tailwind CSS |
+| Backend | Node.js, Express.js |
+| Database | MongoDB |
+| Real-time | Socket.io |
+| Editor | Monaco Editor |
+| Terminal | node-pty, xterm.js |
+| Auth | GitHub OAuth, Google OAuth, JWT |
+| Compiler | Custom Node.js microservice |
 
-## 🎯 Mission
+---
 
-To provide developers with an **efficient, skill-based matching system** and the **real-time communication and coding tools** necessary to transition immediately from finding a partner to executing a project, thereby accelerating innovation and learning.
-
------
-
-## 💡 Why Collab-verse?
-
-| Advantage | Benefit |
-| :--- | :--- |
-| **Efficient Matching** | Stop wading through forums or random groups. Our algorithm connects you with compatible partners based on complementary skills and project requirements. |
-| **GitHub-Verified Profiles** | Build trust immediately with profiles authenticated and populated using real GitHub activity and contribution data. |
-| **Integrated Tooling** | Move from chat to code without leaving the platform. The built-in real-time chat and code compilation service facilitate instant, productive teamwork. |
-| **Focus on Building** | The entire platform is designed to minimize administrative overhead, letting developers focus on the core task: **writing code and solving problems.** |
-
------
-
-## 🛠 Tech Stack
-
-Collab-verse is a robust, full-stack application built primarily with JavaScript technologies, utilizing a modular, microservice-style architecture.
-
--   **Frontend (Client):** **React/Next.js** (Inferred) for a modern, scalable, and responsive user interface.
--   **Backend (Server):** **Node.js / Express.js** for a fast, non-blocking API layer.
--   **Database:** **MongoDB** (Inferred) for flexible data storage, ideal for rapidly evolving user profile data and chat history.
--   **Real-time Communication:** **Socket.io** (Inferred) for the real-time chat functionality.
--   **Containerization:** **Docker** (Confirmed via `Dockerfile` in repository) for consistent deployment of the `compiler-service`.
--   **Core Languages:** JavaScript, CSS.
-
------
-
-## 🌟 Key Features
-
-1.  **Skill-Based Matching:** An intuitive interface allows users to discover potential collaborators by filtering based on programming languages, project experience, and specific technical skills.
-2.  **GitHub Profile Verification:** User authenticity and expertise are established by linking and verifying profiles directly with GitHub.
-3.  **Real-Time Chat:** Integrated, persistent messaging rooms for direct communication and planning between matched developers.
-4.  **Integrated Code Compiler:** A dedicated `compiler-service` allows developers to test code snippets and collaborate on algorithmic solutions in real-time within the platform.
-5.  **Project/Hackathon Listings:** Users can create and browse listings for open projects or hackathon teams seeking specific roles and expertise.
-
------
-
-## 🚀 Getting Started
-
-To run Collab-verse locally, you will need **Node.js** and **npm** installed, along with **Docker** for the compiler service.
-
-### File Structure Overview
-
-The repository is organized into three primary components:
+## Project Structure
 
 ```
 Collab-verse/
-├── client/                 # The Frontend application (React/Next.js)
-│   ├── src/
-│   ├── public/
-│   └── package.json
-├── server/                 # The Backend API (Node.js/Express.js)
+├── client/              # Next.js frontend
+│   └── src/
+│       ├── pages/       # Route pages
+│       ├── components/  # UI components
+│       ├── context/     # Auth, Socket context
+│       └── store/       # Zustand stores
+├── server/              # Express.js API
 │   ├── routes/
-│   ├── models/             # Database Schemas (e.g., User, Match, Chat)
-│   └── package.json
-├── compiler-service/       # Microservice for real-time code compilation/execution
-│   ├── Dockerfile          # Containerization setup
-│   └── ...
-├── .gitignore
-├── LICENSE
-└── README.md
+│   ├── models/
+│   └── middleware/
+└── compiler-service/    # Code execution microservice
+    ├── index.js         # Socket.io + HTTP server
+    ├── terminalService.js
+    └── executionService.js
 ```
 
-### Local Installation Steps (General)
+---
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/Aditya-Shukla4/Collab-verse.git
-    cd Collab-verse
-    ```
-2.  **Set up the Backend (server):**
-    ```bash
-    cd server
-    npm install
-    # Set environment variables (e.g., MongoDB URL, API keys)
-    npm start # Or run your setup script
-    cd ..
-    ```
-3.  **Set up the Frontend (client):**
-    ```bash
-    cd client
-    npm install
-    # Set environment variables (e.g., API endpoint URL)
-    npm start
-    cd ..
-    ```
-4.  **Run the Compiler Service (compiler-service):**
-    ```bash
-    cd compiler-service
-    # Use Docker to build and run the service
-    docker build -t collab-compiler .
-    docker run -p [PORT]:[PORT] collab-compiler
-    cd ..
-    ```
+## Running Locally
 
------
+**Prerequisites:** Node.js 18+, MongoDB
 
-## 🤝 Contributing
+### 1. Clone
 
-We welcome contributions from the community\! If you'd like to improve Collab-verse, please follow these steps:
+```bash
+git clone https://github.com/Aditya-Shukla4/Collab-verse.git
+cd Collab-verse
+```
 
-1.  **Fork** the repository.
-2.  **Create** your feature branch (`git checkout -b feature/NewFeature`).
-3.  **Commit** your changes (`git commit -m 'feat: Add New Feature'`).
-4.  **Push** to the branch (`git push origin feature/NewFeature`).
-5.  **Open a Pull Request** against the `main` branch, clearly describing the changes.
+### 2. Backend
 
-Please also feel free to submit **Bug Reports** or **Feature Suggestions** via the GitHub Issues page.
+```bash
+cd server
+npm install
+```
 
------
+Create `server/.env`:
+```env
+MONGO_URI=your_mongodb_uri
+JWT_SECRET=your_secret
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+CLIENT_URL=http://localhost:3000
+```
 
-## 📄 License
+```bash
+npm run dev
+```
 
-This project is licensed under the **MIT License**.
+### 3. Frontend
 
-See the full **[LICENSE file](https://www.google.com/search?q=/Aditya-Shukla4/Collab-verse/blob/main/LICENSE)** for details.
+```bash
+cd client
+npm install
+```
 
------
+Create `client/.env.local`:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+NEXT_PUBLIC_COMPILER_API_URL=http://localhost:6001
+```
 
-## 📧 Contact
+```bash
+npm run dev
+```
 
-For any questions, feedback, or professional inquiries, please reach out to the project maintainer:
+### 4. Compiler Service
 
-  * **GitHub:** **[Aditya-Shukla4](https://github.com/Aditya-Shukla4/)**
+```bash
+cd compiler-service
+npm install
+node index.js
+```
+
+> **Windows note:** Requires `python`, `node`, and any other language runtimes in your PATH for code execution.
+
+---
+
+## Environment Variables
+
+| Variable | Where | Description |
+|---|---|---|
+| `MONGO_URI` | server | MongoDB connection string |
+| `JWT_SECRET` | server | JWT signing secret |
+| `GITHUB_CLIENT_ID/SECRET` | server | GitHub OAuth app credentials |
+| `GOOGLE_CLIENT_ID/SECRET` | server | Google OAuth credentials |
+| `NEXT_PUBLIC_API_URL` | client | Backend API base URL |
+| `NEXT_PUBLIC_COMPILER_API_URL` | client | Compiler service URL |
+
+---
+
+## Contributing
+
+1. Fork the repo
+2. Create a branch: `git checkout -b feature/your-feature`
+3. Commit: `git commit -m 'feat: add your feature'`
+4. Push: `git push origin feature/your-feature`
+5. Open a pull request
+
+---
+
+## License
+
+MIT — see [LICENSE](./LICENSE)
+
+---
+
+Built by [Aditya Shukla](https://github.com/Aditya-Shukla4)
